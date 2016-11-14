@@ -12,7 +12,8 @@ import gnu.trove.map.TLongObjectMap;
 import gnu.trove.map.hash.TLongIntHashMap;
 import gnu.trove.map.hash.TLongObjectHashMap;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * This example class reads an OSM-PBF file and outputs all ways and their related nodes to multiple output files.
@@ -31,12 +33,17 @@ import java.util.List;
  */
 public class PbfReader {
 
-    private TLongObjectMap<ReaderElement> nodes = new TLongObjectHashMap<>();
-    private TLongIntMap nodeCounter = new TLongIntHashMap();
-    private List<Object> ways = new ArrayList<>();
-    private DistanceCalc distanceCalc = new DistanceCalcEarth();
-    private File osmFile = null;
+    private static final Logger logger = LoggerFactory.getLogger(PbfReader.class);
+
+    protected TLongObjectMap<ReaderElement> nodes = new TLongObjectHashMap<>();
+    protected TLongIntMap nodeCounter = new TLongIntHashMap();
+    protected List<Object> ways = new ArrayList<>();
+    protected DistanceCalc distanceCalc = new DistanceCalcEarth();
+    protected ReaderElementValidator validator = new ReaderElementValidator();
+    protected File osmFile = null;
+
     private String outputFilePath = null;
+
 
     public PbfReader(String filePath, String outputFilePath) {
         this.osmFile = new File(filePath);
@@ -46,42 +53,36 @@ public class PbfReader {
 
     public PbfReader importData() throws Exception {
         if (this.osmFile != null && this.osmFile.exists()) {
-            System.out.println("Starting to import data.");
+            logger.info("Starting to import data.");
 
             long start = System.currentTimeMillis();
+            logger.info("--------------------------- READ WAYS ------------------------");
             readWays();
+            logger.info("--------------------------- READ NODES -----------------------");
             readNodesOfWays();
             this.nodeCounter.clear();
-            long end = System.currentTimeMillis();
-            long importTime = end - start;
 
-            start = System.currentTimeMillis();
-            storeWaysAndNodesToFiles();
-            end = System.currentTimeMillis();
-
-            System.out.println("Loaded " + this.ways.size() + " ways into memory.");
-            System.out.println("Loaded " + this.nodes.size() + " nodes into memory.");
-
-            System.out.println("It took " + (importTime) / 1000 + " seconds to import the data.");
-            System.out.println("It took " + (end - start) / 1000 + " seconds to write the data.");
+            logger.info("Loaded " + this.ways.size() + " ways into memory.");
+            logger.info("Loaded " + this.nodes.size() + " nodes into memory.");
+            logger.info("It took " + (System.currentTimeMillis() - start) / 1000 + " seconds to import the data.");
         } else {
-            System.out.println("Could not start the task, because the OSM file does not exist.");
+            logger.info("Could not start the task, because the OSM file does not exist.");
         }
 
         return this;
     }
 
-    private void readWays() throws Exception {
+
+    protected void readWays() throws Exception {
         processFile("way", item -> {
             switch (item.getType()) {
                 case ReaderElement.WAY:
                     ReaderWay way = (ReaderWay) item;
                     final TLongList nodeList = way.getNodes();
-                    final int size = nodeList.size();
 
-                    if (size > 1 && !(way.hasTag("impassable", "yes") || way.hasTag("status", "impassable"))) {
-                        processWayNodes(nodeList, size);
-                        this.ways.add(ArrayUtils.addAll(nodeList.toArray(), way.getId()));
+                    if (this.validator.isValidWay(way)) {
+                        processWayNodes(nodeList);
+                        this.ways.add(way);
                         return true;
                     }
             }
@@ -90,7 +91,10 @@ public class PbfReader {
         });
     }
 
-    private void processWayNodes(TLongList nodeList, int size) {
+
+    protected void processWayNodes(TLongList nodeList) {
+        // according to documentation there are max. 2000 nodes in a list
+        short size = (short) nodeList.size();
         for (int i = 0; i < size; i++) {
             final long id = nodeList.get(i);
             if (this.nodeCounter.containsKey(id)) {
@@ -101,7 +105,8 @@ public class PbfReader {
         }
     }
 
-    private void readNodesOfWays() throws Exception {
+
+    protected void readNodesOfWays() throws Exception {
         processFile("node", item -> {
             switch (item.getType()) {
                 case ReaderElement.NODE:
@@ -109,10 +114,7 @@ public class PbfReader {
 
                     if (this.nodeCounter.containsKey(node.getId())) {
                         this.nodes.put(node.getId(), node);
-                        int nodeCounter = this.nodeCounter.get(node.getId());
-                        if (--nodeCounter == 0) {
-                            this.nodeCounter.remove(node.getId());
-                        }
+                        this.nodeCounter.remove(node.getId());
 
                         return true;
                     }
@@ -122,7 +124,22 @@ public class PbfReader {
         });
     }
 
-    private void storeWaysAndNodesToFiles() throws Exception {
+
+    protected void processFile(String type, ItemHandler itemHandler) throws Exception {
+        final OSMInputFile osmInputFile = new OSMInputFile(this.osmFile).setWorkerThreads(2).open();
+        int counter = 0;
+        ReaderElement item = null;
+        while ((item = osmInputFile.getNext()) != null) {
+            boolean handled = itemHandler.handle(item);
+
+            if (handled && ++counter % 100000 == 0) {
+                logger.info("Imported " + counter + " objects of type " + type);
+            }
+        }
+    }
+
+
+    public void storeWaysAndNodesToFiles() throws Exception {
         int fileCounter = 0;
         int counter = 0;
         StringBuilder builder = new StringBuilder();
@@ -133,11 +150,11 @@ public class PbfReader {
             if (counter % 1000000 == 0) {
                 write(builder, fileCounter++);
                 builder = new StringBuilder();
-                System.out.println("Wrote " + counter + " nodes to file.");
+                logger.info("Wrote " + counter + " nodes to file.");
             }
         }
         write(builder, fileCounter++);
-        System.out.println("Wrote " + counter + " nodes to file.");
+        logger.info("Wrote " + counter + " nodes to file.");
 
         counter = 0;
         for (Object item : this.ways) {
@@ -147,12 +164,13 @@ public class PbfReader {
             if (counter % 100000 == 0) {
                 write(builder, fileCounter++);
                 builder = new StringBuilder();
-                System.out.println("Wrote " + counter + " ways to file.");
+                logger.info("Wrote " + counter + " ways to file.");
             }
         }
         write(builder, fileCounter);
-        System.out.println("Wrote " + counter + " ways to file.");
+        logger.info("Wrote " + counter + " ways to file.");
     }
+
 
     private StringBuilder getNodeAsString(ReaderElement nodeItem) throws Exception {
         ReaderNode node = (ReaderNode) nodeItem;
@@ -194,6 +212,7 @@ public class PbfReader {
         return builder;
     }
 
+
     private void write(StringBuilder buffer, int fileNumber) throws IOException {
         File outputFile = new File(this.outputFilePath + fileNumber);
         if (outputFile.exists()) {
@@ -212,18 +231,6 @@ public class PbfReader {
         }
     }
 
-    private void processFile(String type, ItemHandler itemHandler) throws Exception {
-        final OSMInputFile osmInputFile = new OSMInputFile(this.osmFile).setWorkerThreads(2).open();
-        int counter = 0;
-        ReaderElement item = null;
-        while ((item = osmInputFile.getNext()) != null) {
-            boolean handled = itemHandler.handle(item);
-
-            if (handled && ++counter % 100000 == 0) {
-                System.out.println("Imported " + counter + " objects of type " + type);
-            }
-        }
-    }
 
     public static void main(String[] args) throws Exception {
         if (args == null || args.length != 2) {
@@ -234,11 +241,6 @@ public class PbfReader {
         String outputFileBase = args[1];
         PbfReader program = new PbfReader(osmInputFile, outputFileBase);
         program.importData();
+        program.storeWaysAndNodesToFiles();
     }
-}
-
-@FunctionalInterface
-interface ItemHandler {
-
-    boolean handle(ReaderElement item);
 }
