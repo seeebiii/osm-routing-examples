@@ -6,11 +6,15 @@ Sebastian Hesse
 
 ## PBF-Reader
 Example to show how to read nodes and ways of a OSM PBF file.
-See [PbfReader](https://github.com/seeebiii/osm-routing-examples/blob/master/src/main/java/de/sebastianhesse/pbf/reader/PbfReader.java)
+See [PbfReader](/src/main/java/de/sebastianhesse/pbf/reader/PbfReader.java)
 
 ## NodeEdgeReader
 Example to show how to read nodes and ways into a graph of nodes and edges.
-See [NodeEdgeReader](https://github.com/seeebiii/osm-routing-examples/blob/master/src/main/java/de/sebastianhesse/pbf/reader/NodeEdgeReader.java)
+See [NodeEdgeReader](/src/main/java/de/sebastianhesse/pbf/reader/SimpleNodeEdgeReader.java)
+
+## OsmMapViewer
+Example to show how to connect OSM data with a Swing application.
+See [OsmMapViewer](/src/main/java/de/sebastianhesse/pbf/viewer/OsmMapViewer.java)
 
 ## License
 MIT License
