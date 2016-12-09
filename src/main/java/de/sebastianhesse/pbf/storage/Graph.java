@@ -1,9 +1,13 @@
 package de.sebastianhesse.pbf.storage;
 
+import de.sebastianhesse.pbf.exceptions.OutOfRangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 
 /**
@@ -21,10 +25,15 @@ public class Graph {
     private int nodeIdx = 0;
     private int edgeIdx = 0;
 
+    private Map<String, GridOffset> gridOffsets;
+    private GraphBoundary graphBoundary;
+
 
     public Graph(int nodes, int edges) {
         this.nodes = new Node[nodes];
         this.edges = new Edge[edges];
+        this.gridOffsets = new HashMap<>();
+        this.graphBoundary = new GraphBoundary();
     }
 
 
@@ -49,6 +58,82 @@ public class Graph {
     public int addNode(Node node) {
         this.nodes[this.nodeIdx] = node;
         return this.nodeIdx++;
+    }
+
+
+    /**
+     * Creates a grid based on lat and lon. E.g. all points of 48.x/10.x are in one grid cell.
+     * Also calculates the boundaries of the available OSM data.
+     *
+     * @return
+     */
+    public Graph sortNodesAndSetGraphBoundaries() {
+        sortNodesIntoGridCells();
+        calcGridOffsetsOnNodesAndUpdateBoundaries();
+
+        return this;
+    }
+
+
+    private void sortNodesIntoGridCells() {
+        Arrays.sort(this.nodes, (node1, node2) -> {
+            if (node1 == null || node2 == null) {
+                return 0;
+            }
+
+            long lat1 = (long) node1.getLat();
+            long lat2 = (long) node2.getLat();
+            long lon1 = (long) node1.getLon();
+            long lon2 = (long) node2.getLon();
+
+            if (lat1 == lat2 && lon1 == lon2) {
+                return 0;
+            }
+
+            if ((lat1 == lat2 && lon1 < lon2) || lat1 > lat2) {
+                return -1;
+            }
+
+            if ((lat1 == lat2 && lon1 > lon2) || lat1 < lat2) {
+                return 1;
+            }
+
+            return 0;
+        });
+    }
+
+
+    private void calcGridOffsetsOnNodesAndUpdateBoundaries() {
+        short lat = (short) this.nodes[0].getLat();
+        short lon = (short) this.nodes[0].getLon();
+        GridOffset lastOffset = new GridOffset(getGridCellName(lat, lon), 0);
+        this.gridOffsets.put(lastOffset.getName(), lastOffset);
+
+        for (int i = 1; i < this.nodes.length; i++) {
+            Node node = this.nodes[i];
+            this.graphBoundary.updateCorners(node);
+            boolean updatedLatOrLong = false;
+
+            // every time the grid coordinates change, we add another offset entry
+            if (((short) node.getLon()) != lon) {
+                lon = (short) node.getLon();
+                updatedLatOrLong = true;
+            }
+
+            if (((short) node.getLat()) != lat) {
+                lat = (short) node.getLat();
+                updatedLatOrLong = true;
+            }
+
+            // only update the offset if the current value belongs to the next grid
+            if (updatedLatOrLong) {
+                String nextOffsetName = getGridCellName(lat, lon);
+                lastOffset.setNextOffset(nextOffsetName);
+                this.gridOffsets.put(lastOffset.getName(), lastOffset);
+                lastOffset = new GridOffset(nextOffsetName, i);
+                this.gridOffsets.put(lastOffset.getName(), lastOffset);
+            }
+        }
     }
 
 
@@ -111,6 +196,51 @@ public class Graph {
     }
 
 
+    public Node[] getNodes() {
+        return nodes;
+    }
+
+
+    public Edge[] getEdges() {
+        return edges;
+    }
+
+
+    public Node[][] getGraphBoundaries() {
+        return this.graphBoundary.getBoundaryNodes();
+    }
+
+
+    public Optional<Node> findClosestNode(double lat, double lon) {
+        try {
+            GridOffset offset = getGridCellOffset(lat, lon);
+            double latDiff = 1.0;
+            double lonDiff = 1.0;
+            Node selectedNode = null;
+            for (int i = offset.getOffset(); i < this.nodes.length; i++) {
+                Node node = this.nodes[i];
+                if (node.getLat() == lat && node.getLon() == lon) {
+                    return Optional.of(node);
+                }
+
+                // TODO: optimize
+                double tmpLatDiff = Math.abs(lat - node.getLat());
+                double tmpLonDiff = Math.abs(lon - node.getLon());
+                if (tmpLatDiff < latDiff && tmpLonDiff < lonDiff) {
+                    selectedNode = node;
+                    latDiff = tmpLatDiff;
+                    lonDiff = tmpLonDiff;
+                }
+            }
+
+            // if no match was found, just return an empty optional
+            return Optional.ofNullable(selectedNode);
+        } catch (OutOfRangeException e) {
+            return Optional.empty();
+        }
+    }
+
+
     /**
      * @return the first 100 items of nodes and edges
      */
@@ -127,5 +257,33 @@ public class Graph {
             builder.append(edge.toString()).append("\n");
         }
         return builder.toString();
+    }
+
+
+    /**
+     * Returns the {@link GridOffset} containing the first point of a grid cell in the node list.
+     * If lat/lon can't be matched to a cell, it means this point is out of range.
+     *
+     * @param lat latitude of a point
+     * @param lon longitude of a point
+     * @return the {@link GridOffset} containing the first point of a grid cell
+     * @throws OutOfRangeException if lat/lon can't be matched to a cell
+     */
+    private GridOffset getGridCellOffset(double lat, double lon) {
+        if (this.gridOffsets.containsKey(getGridCellName(lat, lon))) {
+            return this.gridOffsets.get(getGridCellName(lat, lon));
+        }
+
+        throw new OutOfRangeException("The lat and lon you've provided is out of range.");
+    }
+
+
+    private String getGridCellName(double lat, double lon) {
+        return getGridCellName((short) lat, (short) lon);
+    }
+
+
+    private String getGridCellName(short lat, short lon) {
+        return Short.toString(lat) + "," + Short.toString(lon);
     }
 }

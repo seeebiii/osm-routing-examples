@@ -13,30 +13,52 @@ import java.util.Set;
 public class ReaderElementValidator {
 
     protected Set<String> notAcceptedTags = new HashSet<>();
+    protected Set<String> notAcceptedHighwayValues = new HashSet<>();
 
 
     public ReaderElementValidator() {
         notAcceptedTags.add("barrier");
         notAcceptedTags.add("amenity");
+        notAcceptedTags.add("leisure");
+        notAcceptedTags.add("sports");
+        notAcceptedTags.add("tourism");
+        notAcceptedTags.add("landuse");
+
+        notAcceptedHighwayValues.add("raceway");
+        notAcceptedHighwayValues.add("escape");
+        notAcceptedHighwayValues.add("bus_guideway");
+        notAcceptedHighwayValues.add("footway");
+        notAcceptedHighwayValues.add("bridleway");
+        notAcceptedHighwayValues.add("steps");
+        notAcceptedHighwayValues.add("path");
+        notAcceptedHighwayValues.add("cycleway");
+        notAcceptedHighwayValues.add("proposed");
     }
 
 
     public boolean isValidWay(ReaderWay way) {
-        boolean isValid = true;
         for (String notAcceptedTag : this.notAcceptedTags) {
-            isValid = StringUtils.isBlank(way.getTag(notAcceptedTag));
-            if (!isValid) {
+            if (StringUtils.isNotBlank(way.getTag(notAcceptedTag))) {
                 return false;
             }
         }
 
-        // at this point isValid is always true, otherwise the method would have returned false before
         return way.getNodes().size() > 1 && !(way.hasTag("impassable", "yes") || way.hasTag("status", "impassable") ||
-                way.hasTag("area", "yes") || way.hasTag("highway", "raceway"));
+                way.hasTag("area", "yes")) && StringUtils.isBlank(way.getTag("leisure")) &&
+                !way.hasTag("highway", notAcceptedHighwayValues);
     }
 
 
-    public boolean isNotOneWay(ReaderWay way) {
-        return !way.hasTag("oneway", "yes", "-1");
+    public boolean isNotOneWay(Object way) {
+        if (way instanceof ReaderWay) {
+            return !isOneWay((ReaderWay) way);
+        } else {
+            return way instanceof Way && !((Way) way).isOneWay();
+        }
+    }
+
+
+    public boolean isOneWay(ReaderWay way) {
+        return way.hasTag("oneway", "yes", "-1");
     }
 }

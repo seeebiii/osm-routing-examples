@@ -21,10 +21,12 @@ import java.util.List;
 
 /**
  * Reads an OSM file into a {@link Graph} object which contains nodes and edges.
+ * Optimizes ways by removing all nodes which are just used for one way, i.e. there are mostly nodes on the
+ * beginning/end of a way or where ways cross each other.
  */
-public class NodeEdgeReader {
+public class OptimizedNodeEdgeReader {
 
-    private static final Logger logger = LoggerFactory.getLogger(NodeEdgeReader.class);
+    private static final Logger logger = LoggerFactory.getLogger(OptimizedNodeEdgeReader.class);
 
     protected TLongIntMap nodeCounter = new TLongIntHashMap();
     protected TLongIntMap osmIdMapping;
@@ -37,7 +39,7 @@ public class NodeEdgeReader {
     protected File osmFile = null;
 
 
-    public NodeEdgeReader(String osmFile) {
+    public OptimizedNodeEdgeReader(String osmFile) {
         this.osmFile = new File(osmFile);
     }
 
@@ -58,7 +60,7 @@ public class NodeEdgeReader {
      * @return the reader instance (this)
      * @throws Exception in case of IO problems
      */
-    public NodeEdgeReader importData() throws Exception {
+    public OptimizedNodeEdgeReader importData() throws Exception {
         if (this.osmFile != null && this.osmFile.exists()) {
             logger.info("--------------------------- START TO IMPORT DATA -------------");
             long start = System.currentTimeMillis();
@@ -69,6 +71,8 @@ public class NodeEdgeReader {
             optimizeWays();
             logger.info("--------------------------- READ NODES -----------------------");
             readNodesOfWays();
+            logger.info("--------------------------- SORT NODES -----------------------");
+            sortNodes();
             logger.info("--------------------------- READ EDGES -----------------------");
             readEdgesOfWays();
             logger.info("--------------------------- SORT GRAPH -----------------------");
@@ -93,9 +97,9 @@ public class NodeEdgeReader {
                     ReaderWay way = (ReaderWay) item;
                     final TLongList nodeList = way.getNodes();
 
-                    if (this.validator.isValidWay(way)) {
+                    if (this.validator.isValidWay(way) && nodeList.size() > 1) {
                         processWayNodes(nodeList);
-                        this.ways.add(way);
+                        this.ways.add(new Way(way, this.validator.isOneWay(way)));
                         return true;
                     }
             }
@@ -122,7 +126,7 @@ public class NodeEdgeReader {
         logger.info("Before optimization: " + this.nodeCounter.size() + " nodes have to be imported.");
 
         this.ways.forEach(wayObj -> {
-            ReaderWay way = (ReaderWay) wayObj;
+            Way way = (Way) wayObj;
             final TLongList oldNodes = way.getNodes();
             final int oldNodesSize = oldNodes.size();
             final TLongList newNodes = new TLongArrayList(oldNodesSize);
@@ -177,6 +181,7 @@ public class NodeEdgeReader {
                     // only import a node if it is used by a way (this was evaluated when the ways have been imported)
                     if (this.nodeCounter.containsKey(readerNode.getId())) {
                         final Node node = new Node(readerNode.getLat(), readerNode.getLon());
+                        node.setId(readerNode.getId());
                         int nodeIndex = this.graph.addNode(node);
                         this.osmIdMapping.put(readerNode.getId(), nodeIndex);
 
@@ -189,9 +194,18 @@ public class NodeEdgeReader {
     }
 
 
+    private void sortNodes() {
+        Node[] nodes = this.graph.sortNodesAndSetGraphBoundaries().getNodes();
+        for (int i = 0; i < nodes.length; i++) {
+            this.osmIdMapping.put(nodes[i].getId(), i);
+        }
+        logger.info("Sorted nodes according to latitude/longitude.");
+    }
+
+
     private void readEdgesOfWays() {
         this.ways.forEach(wayObj -> {
-            ReaderWay way = (ReaderWay) wayObj;
+            Way way = (Way) wayObj;
             final TLongList oldNodes = way.getNodes();
             final int oldNodesSize = oldNodes.size();
             long sourceNode = oldNodes.get(0);
@@ -218,7 +232,7 @@ public class NodeEdgeReader {
     }
 
 
-    private void addEdgeToGraph(ReaderWay way, long sourceNodeOsmId, long targetNodeOsmId) {
+    private void addEdgeToGraph(Way way, long sourceNodeOsmId, long targetNodeOsmId) {
         int sourceNodeIndex = this.osmIdMapping.get(sourceNodeOsmId);
         int targetNodeIndex = this.osmIdMapping.get(targetNodeOsmId);
         this.graph.addEdge(new Edge(sourceNodeIndex, targetNodeIndex));
@@ -263,22 +277,4 @@ public class NodeEdgeReader {
 
         logger.info("Finished import: Imported " + counter + " objects of type " + type);
     }
-
-
-    public static void main(String[] args) throws Exception {
-        if (args == null || args.length != 1) {
-            System.exit(1);
-        }
-
-        String osmInputFile = args[0];
-        NodeEdgeReader reader = new NodeEdgeReader(osmInputFile);
-        reader.importData();
-    }
-}
-
-
-@FunctionalInterface
-interface ItemHandler {
-
-    boolean handle(ReaderElement item);
 }

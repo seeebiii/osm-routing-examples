@@ -230,17 +230,4 @@ public class PbfReader {
             }
         }
     }
-
-
-    public static void main(String[] args) throws Exception {
-        if (args == null || args.length != 2) {
-            System.exit(1);
-        }
-
-        String osmInputFile = args[0];
-        String outputFileBase = args[1];
-        PbfReader program = new PbfReader(osmInputFile, outputFileBase);
-        program.importData();
-        program.storeWaysAndNodesToFiles();
-    }
 }
