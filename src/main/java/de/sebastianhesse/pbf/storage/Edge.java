@@ -1,5 +1,7 @@
 package de.sebastianhesse.pbf.storage;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 
@@ -31,21 +33,24 @@ public class Edge {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
+
         if (o == null || getClass() != o.getClass()) return false;
 
         Edge edge = (Edge) o;
 
-        if (sourceNode != edge.sourceNode) return false;
-        return targetNode == edge.targetNode;
-
+        return new EqualsBuilder()
+                .append(sourceNode, edge.sourceNode)
+                .append(targetNode, edge.targetNode)
+                .isEquals();
     }
 
 
     @Override
     public int hashCode() {
-        int result = (int) (sourceNode ^ (sourceNode >>> 32));
-        result = 31 * result + (int) (targetNode ^ (targetNode >>> 32));
-        return result;
+        return new HashCodeBuilder(17, 37)
+                .append(sourceNode)
+                .append(targetNode)
+                .toHashCode();
     }
 
 
