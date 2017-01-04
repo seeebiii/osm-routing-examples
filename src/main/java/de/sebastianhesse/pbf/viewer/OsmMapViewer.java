@@ -1,11 +1,14 @@
 package de.sebastianhesse.pbf.viewer;
 
+import de.sebastianhesse.pbf.reader.NodeEdgeReader;
 import de.sebastianhesse.pbf.reader.OptimizedNodeEdgeReader;
+import de.sebastianhesse.pbf.reader.SimpleNodeEdgeReader;
 import de.sebastianhesse.pbf.routing.Dijkstra;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
 import gnu.trove.map.TObjectIntMap;
+import org.apache.commons.lang3.StringUtils;
 import org.openstreetmap.gui.jmapviewer.Coordinate;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
 import org.openstreetmap.gui.jmapviewer.JMapViewerTree;
@@ -48,6 +51,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
     private JLabel mperpLabelValue;
 
     private String osmFilePath = "";
+    private boolean optimizeWays = false;
     private Graph graph;
     private Node[] routeNodes = new Node[2];
 
@@ -55,9 +59,12 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
     /**
      * Constructs the {@code Viewer}.
      */
-    public OsmMapViewer(String osmFilePath) throws Exception {
+    public OsmMapViewer(String osmFilePath, boolean optimize) throws Exception {
         super("JMapViewer Demo");
         this.osmFilePath = osmFilePath;
+        this.optimizeWays = optimize;
+
+        logger.info("Starting OsmMapViewer for OSM data of file {}. Optimizing data: {}", this.osmFilePath, this.optimizeWays);
 
         treeMap = new JMapViewerTree("Zones");
         setupJFrame();
@@ -152,7 +159,13 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
     public void importOsmData() throws Exception {
         // import graph data
-        OptimizedNodeEdgeReader reader = new OptimizedNodeEdgeReader(this.osmFilePath);
+        NodeEdgeReader reader;
+        if (this.optimizeWays) {
+            reader = new OptimizedNodeEdgeReader(this.osmFilePath);
+        } else {
+            reader = new SimpleNodeEdgeReader(this.osmFilePath);
+        }
+
         this.graph = reader.importData().getGraph();
         // show nodes and edges on the left
         addNodeEdgePanel();
@@ -245,8 +258,9 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
      * @param args Main program arguments
      */
     public static void main(String[] args) throws Exception {
-        if (args != null && args.length == 1) {
-            OsmMapViewer osmMapViewer = new OsmMapViewer(args[0]);
+        if (args != null && args.length >= 1) {
+            OsmMapViewer osmMapViewer = new OsmMapViewer(args[0],
+                    StringUtils.containsIgnoreCase(args.length == 2 ? args[1] : null, "optimize=true"));
             osmMapViewer.importOsmData();
             osmMapViewer.setVisible(true);
         } else {
