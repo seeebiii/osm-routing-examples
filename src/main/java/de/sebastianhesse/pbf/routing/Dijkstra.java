@@ -3,6 +3,7 @@ package de.sebastianhesse.pbf.routing;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
+import gnu.trove.iterator.TLongIterator;
 import gnu.trove.map.TObjectDoubleMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Queue;
 
 
 /**
@@ -32,7 +34,7 @@ public class Dijkstra {
 
     // store costs
     private TObjectDoubleMap<Node> distances;
-    // store nodes of cheapest path
+    // store nodes of shortest path
     private TObjectIntMap<Node> predecessors;
 
 
@@ -50,15 +52,18 @@ public class Dijkstra {
         logger.info("Starting Dijkstra.");
 
         TLongSet settled = new TLongHashSet();
-        PriorityQueue<Node> unsettled = new PriorityQueue<>();
-        unsettled.add(source);
+        Queue<Integer> unsettled = new PriorityQueue<>();
+        unsettled.add((int) source.getId());
         distances.put(source, 0);
         predecessors.put(source, -1);
 
         while (!unsettled.isEmpty()) {
-            Node node = getMinimum(unsettled);
-            settled.add(node.getId());
-            unsettled.remove(node);
+            Node node = nodes[unsettled.poll()];
+
+            if (settled.contains(node.getId())) {
+                // we've already visited this node, thus skip it
+                continue;
+            }
 
             if (node.equals(target)) {
                 break;
@@ -69,9 +74,10 @@ public class Dijkstra {
                 try {
                     double calcDistanceToNeighbour = getShortestDistance(node) + getDistance(node, neighbour);
                     if (getShortestDistance(neighbour) > calcDistanceToNeighbour) {
+                        unsettled.remove((int) neighbour.getId());
                         distances.put(neighbour, calcDistanceToNeighbour);
                         predecessors.put(neighbour, (int) node.getId());
-                        unsettled.add(neighbour);
+                        unsettled.add((int) neighbour.getId());
                     }
                 } catch (Exception e) {
                     logger.info("Exception occurred. Current node: {}, neighbours: {}, current neighbour: {}",
@@ -80,6 +86,10 @@ public class Dijkstra {
                     unsettled.clear();
                 }
             }
+
+            // we are done investigating all of the node's neighbours -> mark node as visited
+            settled.add(node.getId());
+//            unsettled.remove((int) node.getId());
         }
 
         if (distances.containsKey(target)) {
@@ -110,15 +120,20 @@ public class Dijkstra {
     }
 
 
-    private Node getMinimum(PriorityQueue<Node> unsettled) {
+    private Node getMinimum(TLongSet unsettled) {
         Node minimum = null;
-        for (Node node : unsettled) {
+
+        TLongIterator iterator = unsettled.iterator();
+        while (iterator.hasNext()) {
+            long id = iterator.next();
+            Node node = nodes[(int) id];
             if (minimum == null) {
                 minimum = node;
             } else if (getShortestDistance(node) < getShortestDistance(minimum)) {
                 minimum = node;
             }
         }
+
         return minimum;
     }
 
@@ -130,6 +145,7 @@ public class Dijkstra {
             return Double.MAX_VALUE;
         }
     }
+
 
     private List<Node> getNodesFromPredecessors() {
         List<Node> path = new ArrayList<>(predecessors.size());
