@@ -12,6 +12,8 @@ public class Edge {
 
     private int sourceNode;
     private int targetNode;
+    private double distance = 0;
+    private short speed = 0;
 
 
     public Edge(int sourceNode, int targetNode) {
@@ -27,6 +29,26 @@ public class Edge {
 
     public int getTargetNode() {
         return targetNode;
+    }
+
+
+    public double getDistance() {
+        return distance;
+    }
+
+
+    public void setDistance(double distance) {
+        this.distance = distance;
+    }
+
+
+    public short getSpeed() {
+        return speed;
+    }
+
+
+    public void setSpeed(short speed) {
+        this.speed = speed;
     }
 
 

@@ -9,7 +9,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * A {@link Graph} node containing latitude and longitude information. Also holds an offset pointer with the index
  * of the nodes first {@link Edge} within the edge array of a {@link Graph}. This is used for routing.
  */
-public class Node {
+public class Node implements Comparable<Node> {
 
     private long id;
     private double lat;
@@ -50,6 +50,15 @@ public class Node {
 
     public void setOffsetPointer(int offsetPointer) {
         this.offsetPointer = offsetPointer;
+    }
+
+
+    @Override
+    public int compareTo(Node o) {
+        if (o == null) {
+            return 1;
+        }
+        return (int) (this.getId() - o.getId());
     }
 
 
