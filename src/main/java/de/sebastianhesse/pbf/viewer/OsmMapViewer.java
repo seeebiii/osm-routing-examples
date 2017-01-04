@@ -47,6 +47,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
     private JLabel mperpLabelName;
     private JLabel mperpLabelValue;
 
+    private String osmFilePath = "";
     private Graph graph;
     private Node[] routeNodes = new Node[2];
 
@@ -54,8 +55,10 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
     /**
      * Constructs the {@code Viewer}.
      */
-    public OsmMapViewer() throws Exception {
+    public OsmMapViewer(String osmFilePath) throws Exception {
         super("JMapViewer Demo");
+        this.osmFilePath = osmFilePath;
+
         treeMap = new JMapViewerTree("Zones");
         setupJFrame();
         setupPanels();
@@ -114,6 +117,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
         });
     }
 
+
     private void setupJFrame() {
         setSize(400, 400);
         setLayout(new BorderLayout());
@@ -148,7 +152,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
     public void importOsmData() throws Exception {
         // import graph data
-        OptimizedNodeEdgeReader reader = new OptimizedNodeEdgeReader("C:\\Projects\\graphhopper-files\\stuttgart.osm.pbf");
+        OptimizedNodeEdgeReader reader = new OptimizedNodeEdgeReader(this.osmFilePath);
         this.graph = reader.importData().getGraph();
         // show nodes and edges on the left
         addNodeEdgePanel();
@@ -177,7 +181,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
         Node[] nodes = this.graph.getNodes();
         Object[][] rows = new Object[nodes.length][];
         for (int i = 0; i < rows.length; i++) {
-            rows[i] = new Object[] {i, nodes[i].getLat(), nodes[i].getLon(), nodes[i].getOffsetPointer()};
+            rows[i] = new Object[]{i, nodes[i].getLat(), nodes[i].getLon(), nodes[i].getOffsetPointer()};
             if (i % 100000 == 0) {
                 logger.debug(i + " nodes.");
             }
@@ -190,7 +194,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
 
     private JScrollPane createEdgeScrollPane() {
-        String[] edgeColumnNames = new String[] {"#", "Source", "Target", "Distance", "Speed"};
+        String[] edgeColumnNames = new String[]{"#", "Source", "Target", "Distance", "Speed"};
         Edge[] edges = this.graph.getEdges();
         Object[][] edgeData = new Object[graph.getEdgesSize()][];
         for (int i = 0; i < graph.getEdgesSize(); i++) {
@@ -241,9 +245,14 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
      * @param args Main program arguments
      */
     public static void main(String[] args) throws Exception {
-        OsmMapViewer osmMapViewer = new OsmMapViewer();
-        osmMapViewer.importOsmData();
-        osmMapViewer.setVisible(true);
+        if (args != null && args.length == 1) {
+            OsmMapViewer osmMapViewer = new OsmMapViewer(args[0]);
+            osmMapViewer.importOsmData();
+            osmMapViewer.setVisible(true);
+        } else {
+            logger.error("You must provide a path to a file with OSM data.");
+            System.exit(1);
+        }
     }
 
 
