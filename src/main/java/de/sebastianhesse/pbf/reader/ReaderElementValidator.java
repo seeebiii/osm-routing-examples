@@ -15,7 +15,6 @@ import java.util.Set;
 public class ReaderElementValidator {
 
     protected Set<String> notAcceptedTags = new HashSet<>();
-    protected Set<String> notAcceptedHighwayValues = new HashSet<>();
     protected Map<String, Short> maxSpeeds = new HashMap<>();
 
 
@@ -26,16 +25,6 @@ public class ReaderElementValidator {
         notAcceptedTags.add("sports");
         notAcceptedTags.add("tourism");
         notAcceptedTags.add("landuse");
-
-        notAcceptedHighwayValues.add("raceway");
-        notAcceptedHighwayValues.add("escape");
-        notAcceptedHighwayValues.add("bus_guideway");
-        notAcceptedHighwayValues.add("footway");
-        notAcceptedHighwayValues.add("bridleway");
-        notAcceptedHighwayValues.add("steps");
-        notAcceptedHighwayValues.add("path");
-        notAcceptedHighwayValues.add("cycleway");
-        notAcceptedHighwayValues.add("proposed");
 
         // Types from http://wiki.openstreetmap.org/wiki/Key:highway
         maxSpeeds.put("motorway", (short) 100);
@@ -68,7 +57,7 @@ public class ReaderElementValidator {
 
         return way.getNodes().size() > 1 && !(way.hasTag("impassable", "yes") || way.hasTag("status", "impassable") ||
                 way.hasTag("area", "yes")) && StringUtils.isBlank(way.getTag("leisure")) &&
-                !way.hasTag("highway", notAcceptedHighwayValues);
+                maxSpeeds.containsKey(way.getTag("highway"));
     }
 
 
