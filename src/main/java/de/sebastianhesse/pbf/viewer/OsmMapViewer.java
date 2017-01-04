@@ -1,12 +1,15 @@
 package de.sebastianhesse.pbf.viewer;
 
 import de.sebastianhesse.pbf.reader.OptimizedNodeEdgeReader;
+import de.sebastianhesse.pbf.routing.Dijkstra;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
+import gnu.trove.map.TObjectIntMap;
 import org.openstreetmap.gui.jmapviewer.Coordinate;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
 import org.openstreetmap.gui.jmapviewer.JMapViewerTree;
+import org.openstreetmap.gui.jmapviewer.Layer;
 import org.openstreetmap.gui.jmapviewer.MapMarkerDot;
 import org.openstreetmap.gui.jmapviewer.MapPolygonImpl;
 import org.openstreetmap.gui.jmapviewer.OsmTileLoader;
@@ -45,6 +48,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
     private JLabel mperpLabelValue;
 
     private Graph graph;
+    private Node[] routeNodes = new Node[2];
 
 
     /**
@@ -81,6 +85,29 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
                     nodeOptional.ifPresent(node -> {
                         logger.info("Found closest point: ({},{})", node.getLat(), node.getLon());
                         map().addMapMarker(new MapMarkerDot(node.getLat(), node.getLon()));
+                        if (routeNodes[0] == null) {
+                            routeNodes[0] = node;
+                        } else {
+                            if (routeNodes[1] != null) {
+                                routeNodes[0] = routeNodes[1];
+                            }
+                            routeNodes[1] = node;
+                        }
+
+                        if (routeNodes[1] != null) {
+                            Dijkstra dijkstra = new Dijkstra(graph, routeNodes[0], routeNodes[1]);
+                            dijkstra.getShortestPath();
+
+                            // TODO: dijkstra already returns a list of nodes -> adapt it
+                            Layer route = new Layer("Route from " + routeNodes[0].getId() + " to " + routeNodes[1].getId());
+                            TObjectIntMap<Node> predecessors = dijkstra.getPredecessors();
+                            Node routeNode = routeNodes[1];
+                            while (predecessors.containsKey(routeNode) && predecessors.get(routeNode) != -1) {
+                                map().addMapMarker(new MapMarkerDot(route, routeNode.getLat(), routeNode.getLon()));
+                                routeNode = graph.getNodes()[predecessors.get(routeNode)];
+                            }
+                            treeMap.addLayer(route);
+                        }
                     });
                 }
             }
@@ -146,11 +173,11 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
 
     private JScrollPane createNodeScrollPane() {
-        String[] nodeColumnNames = new String[]{"#", "Latitude", "Longitude"};
+        String[] nodeColumnNames = new String[]{"#", "Latitude", "Longitude", "Offset"};
         Node[] nodes = this.graph.getNodes();
         Object[][] rows = new Object[nodes.length][];
         for (int i = 0; i < rows.length; i++) {
-            rows[i] = new Object[] {i, nodes[i].getLat(), nodes[i].getLon()};
+            rows[i] = new Object[] {i, nodes[i].getLat(), nodes[i].getLon(), nodes[i].getOffsetPointer()};
             if (i % 100000 == 0) {
                 logger.debug(i + " nodes.");
             }
@@ -163,15 +190,15 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
 
     private JScrollPane createEdgeScrollPane() {
-        String[] edgeColumnNames = new String[] {"#", "Source", "Target"};
+        String[] edgeColumnNames = new String[] {"#", "Source", "Target", "Distance", "Speed"};
         Edge[] edges = this.graph.getEdges();
-        Object[][] edgeData = new Object[edges.length][];
-        for (int i = 0; i < edges.length; i++) {
+        Object[][] edgeData = new Object[graph.getEdgesSize()][];
+        for (int i = 0; i < graph.getEdgesSize(); i++) {
             Edge edge = edges[i];
             if (edge == null) {
                 logger.debug("Edge was null at " + i);
             } else {
-                edgeData[i] = new Object[]{i, edge.getSourceNode(), edge.getTargetNode()};
+                edgeData[i] = new Object[]{i, edge.getSourceNode(), edge.getTargetNode(), edge.getDistance(), edge.getSpeed()};
                 if (i % 100000 == 0) {
                     logger.debug(i + " edges.");
                 }
@@ -197,7 +224,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
     private JScrollPane getScrollPane(String[] columnNames, Object[][] data) {
         JTable table = new JTable(data, columnNames);
-        table.setPreferredScrollableViewportSize(new Dimension(400, 420));
+        table.setPreferredScrollableViewportSize(new Dimension(400, 800));
         JScrollPane scrollPane = new JScrollPane(table);
         scrollPane.setVisible(true);
         scrollPane.setAutoscrolls(true);

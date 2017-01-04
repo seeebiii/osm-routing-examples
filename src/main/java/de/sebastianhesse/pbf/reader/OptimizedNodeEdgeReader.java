@@ -99,7 +99,8 @@ public class OptimizedNodeEdgeReader {
 
                     if (this.validator.isValidWay(way) && nodeList.size() > 1) {
                         processWayNodes(nodeList);
-                        this.ways.add(new Way(way, this.validator.isOneWay(way)));
+                        short speed = this.validator.getMaxSpeed(way);
+                        this.ways.add(new Way(way, this.validator.isOneWay(way), speed));
                         return true;
                     }
             }
@@ -235,12 +236,43 @@ public class OptimizedNodeEdgeReader {
     private void addEdgeToGraph(Way way, long sourceNodeOsmId, long targetNodeOsmId) {
         int sourceNodeIndex = this.osmIdMapping.get(sourceNodeOsmId);
         int targetNodeIndex = this.osmIdMapping.get(targetNodeOsmId);
-        this.graph.addEdge(new Edge(sourceNodeIndex, targetNodeIndex));
+        this.graph.addEdge(getEdge(way, sourceNodeIndex, targetNodeIndex));
 
         if (this.validator.isNotOneWay(way)) {
             // in case the way can be used in both directions, we need to add a reverse edge
-            this.graph.addEdge(new Edge(targetNodeIndex, sourceNodeIndex));
+            this.graph.addEdge(getEdge(way, sourceNodeIndex, targetNodeIndex));
         }
+    }
+
+
+    private Edge getEdge(Way way, int sourceNodeIndex, int targetNodeIndex) {
+        Edge edge = new Edge(sourceNodeIndex, targetNodeIndex);
+
+        // calc distance
+        Node source = this.graph.getNodes()[sourceNodeIndex];
+        Node target = this.graph.getNodes()[targetNodeIndex];
+        double distance = getDistance(source, target);
+        edge.setDistance(distance);
+
+        // speed
+        edge.setSpeed(way.getMaxSpeed());
+
+        return edge;
+    }
+
+
+    private double getDistance(Node node, Node target) {
+        double R = 6371e3; // metres
+        double lat1 = node.getLat();
+        double lat2 = target.getLat();
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(target.getLon() - target.getLon());
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+
+        double a = Math.pow(Math.sin(dLat / 2), 2) + Math.pow(Math.sin(dLon / 2), 2) * Math.cos(lat1) * Math.cos(lat2);
+        double c = 2 * Math.asin(Math.sqrt(a));
+        return R * c;
     }
 
 

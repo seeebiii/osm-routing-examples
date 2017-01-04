@@ -1,11 +1,14 @@
 package de.sebastianhesse.pbf.storage;
 
 import de.sebastianhesse.pbf.exceptions.OutOfRangeException;
+import gnu.trove.set.TLongSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -41,11 +44,12 @@ public class Graph {
      * Adds a new edge to the graph and returns the index where it has been inserted.
      *
      * @param edge an edge containing at least the source and target id of a node
-     * @return the index where the edge has been inserted at
      */
-    public int addEdge(Edge edge) {
-        this.edges[this.edgeIdx] = edge;
-        return this.edgeIdx++;
+    public void addEdge(Edge edge) {
+        if (edge != null && edge.getSourceNode() != edge.getTargetNode()) {
+            this.edges[this.edgeIdx] = edge;
+            this.edgeIdx++;
+        }
     }
 
 
@@ -65,7 +69,7 @@ public class Graph {
      * Creates a grid based on lat and lon. E.g. all points of 48.x/10.x are in one grid cell.
      * Also calculates the boundaries of the available OSM data.
      *
-     * @return
+     * @return current graph
      */
     public Graph sortNodesAndSetGraphBoundaries() {
         sortNodesIntoGridCells();
@@ -81,10 +85,10 @@ public class Graph {
                 return 0;
             }
 
-            long lat1 = (long) node1.getLat();
-            long lat2 = (long) node2.getLat();
-            long lon1 = (long) node1.getLon();
-            long lon2 = (long) node2.getLon();
+            short lat1 = (short) node1.getLat();
+            short lat2 = (short) node2.getLat();
+            short lon1 = (short) node1.getLon();
+            short lon2 = (short) node2.getLon();
 
             if (lat1 == lat2 && lon1 == lon2) {
                 return 0;
@@ -152,7 +156,7 @@ public class Graph {
         logger.debug("Done.");
         logger.debug("2. Set offset pointer to nodes...");
 
-        setOffsetPointerToNodes();
+        setOffsetPointerForNodes();
 
         logger.debug("Done.");
         logger.debug("--- End sorting ---");
@@ -178,17 +182,20 @@ public class Graph {
     }
 
 
-    private void setOffsetPointerToNodes() {
+    private void setOffsetPointerForNodes() {
         int j = 0;
+        boolean foundOffset = false;
         for (int i = 0; i < this.nodeIdx; i++) {
             Node node = this.nodes[i];
-            boolean foundOffset = false;
+            node.setId(i);
             for (; j < this.edgeIdx; j++) {
                 Edge edge = this.edges[j];
                 if (!foundOffset && edge.getSourceNode() == i) {
                     node.setOffsetPointer(j);
                     foundOffset = true;
-                } else if (foundOffset && edge.getSourceNode() != i) {
+                } else if (edge.getSourceNode() != i) {
+                    // reset foundOffset
+                    foundOffset = false;
                     break;
                 }
             }
@@ -206,8 +213,36 @@ public class Graph {
     }
 
 
+    public int getEdgesSize() {
+        return this.edgeIdx;
+    }
+
+
     public Node[][] getGraphBoundaries() {
         return this.graphBoundary.getBoundaryNodes();
+    }
+
+
+    public List<Node> getNeighboursOfNode(Node node, TLongSet settled) {
+        int edgeOffset = node.getOffsetPointer();
+
+        if (edgeOffset == -1) {
+            // this might happen if a street ends and the street has just one way/direction
+            return new ArrayList<Node>();
+        }
+
+        List<Node> neighbours = new ArrayList<>();
+        for (int i = edgeOffset; i < this.edgeIdx; i++) {
+            Edge edge = this.edges[i];
+            if (edge.getSourceNode() == node.getId() && !settled.contains(edge.getTargetNode())) {
+                neighbours.add(this.nodes[edge.getTargetNode()]);
+            } else {
+                // this happens if there are no further edges for the node, so we can break out and return neighbours
+                break;
+            }
+        }
+
+        return neighbours;
     }
 
 
@@ -252,7 +287,7 @@ public class Graph {
         }
 
         builder.append("\n").append("--- Edges: ").append(this.edgeIdx).append(" ---\n");
-        for (int i = 0; i < 100 && i < this.edges.length; i++) {
+        for (int i = 0; i < 100 && i < this.edgeIdx; i++) {
             Edge edge = this.edges[i];
             builder.append(edge.toString()).append("\n");
         }
