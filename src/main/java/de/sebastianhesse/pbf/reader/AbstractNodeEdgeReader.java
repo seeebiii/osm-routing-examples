@@ -24,7 +24,7 @@ import java.util.List;
  */
 public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
 
-    private static final Logger logger = LoggerFactory.getLogger(OptimizedNodeEdgeReader.class);
+    private static final Logger logger = LoggerFactory.getLogger(AbstractNodeEdgeReader.class);
 
     protected TLongIntMap nodeCounter = new TLongIntHashMap();
     protected TLongIntMap osmIdMapping;
@@ -162,7 +162,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
 
         if (this.validator.isNotOneWay(way)) {
             // in case the way can be used in both directions, we need to add a reverse edge
-            this.graph.addEdge(getEdge(way, sourceNodeIndex, targetNodeIndex));
+            this.graph.addEdge(getEdge(way, targetNodeIndex, sourceNodeIndex));
         }
     }
 
@@ -184,7 +184,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
 
 
     protected double getDistance(Node node, Node target) {
-        double R = 6371e3; // metres
+        double R = 6372800; // metres
         double lat1 = node.getLat();
         double lat2 = target.getLat();
         double dLat = Math.toRadians(lat2 - lat1);

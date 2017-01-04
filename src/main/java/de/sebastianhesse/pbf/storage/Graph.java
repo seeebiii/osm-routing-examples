@@ -234,8 +234,10 @@ public class Graph {
         List<Node> neighbours = new ArrayList<>();
         for (int i = edgeOffset; i < this.edgeIdx; i++) {
             Edge edge = this.edges[i];
-            if (edge.getSourceNode() == node.getId() && !settled.contains(edge.getTargetNode())) {
-                neighbours.add(this.nodes[edge.getTargetNode()]);
+            if (edge.getSourceNode() == node.getId()) {
+                if (!settled.contains(edge.getTargetNode())) {
+                    neighbours.add(this.nodes[edge.getTargetNode()]);
+                }
             } else {
                 // this happens if there are no further edges for the node, so we can break out and return neighbours
                 break;

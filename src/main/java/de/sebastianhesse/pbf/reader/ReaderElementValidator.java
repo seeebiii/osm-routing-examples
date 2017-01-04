@@ -71,7 +71,9 @@ public class ReaderElementValidator {
 
 
     public boolean isOneWay(ReaderWay way) {
-        return way.hasTag("oneway", "yes", "-1");
+        return way.hasTag("oneway", "yes", "-1") ||
+                way.hasTag("highway", "motorway", "motorway_link", "trunk_link", "primary_link") ||
+                way.hasTag("junction", "roundabout");
     }
 
 

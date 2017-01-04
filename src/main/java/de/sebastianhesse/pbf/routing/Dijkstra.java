@@ -3,7 +3,6 @@ package de.sebastianhesse.pbf.routing;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
-import gnu.trove.iterator.TLongIterator;
 import gnu.trove.map.TObjectDoubleMap;
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectDoubleHashMap;
@@ -16,14 +15,12 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
 
 
 /**
  * A simple Dijkstra implementation.
  */
-public class Dijkstra {
+public class Dijkstra extends Thread {
 
     private static final Logger logger = LoggerFactory.getLogger(Dijkstra.class);
 
@@ -48,48 +45,50 @@ public class Dijkstra {
     }
 
 
-    public List<Node> getShortestPath() {
+    @Override
+    public void run() {
         logger.info("Starting Dijkstra.");
 
         TLongSet settled = new TLongHashSet();
-        Queue<Integer> unsettled = new PriorityQueue<>();
-        unsettled.add((int) source.getId());
+        FibonacciHeap<Long> unsettled = new FibonacciHeap<>();
+        unsettled.enqueue(source.getId(), 0d);
         distances.put(source, 0);
         predecessors.put(source, -1);
 
         while (!unsettled.isEmpty()) {
-            Node node = nodes[unsettled.poll()];
+            Node node = nodes[unsettled.dequeueMin().getValue().intValue()];
 
             if (settled.contains(node.getId())) {
-                // we've already visited this node, thus skip it
+                // we've already visited this node, thus skip it;
                 continue;
             }
 
             if (node.equals(target)) {
+                // stop here if we've found the target
                 break;
             }
 
+            // investigate all neighbours of the current node and update the distances, predecessors, etc
             List<Node> neighbours = this.graph.getNeighboursOfNode(node, settled);
             for (Node neighbour : neighbours) {
                 try {
                     double calcDistanceToNeighbour = getShortestDistance(node) + getDistance(node, neighbour);
                     if (getShortestDistance(neighbour) > calcDistanceToNeighbour) {
-                        unsettled.remove((int) neighbour.getId());
                         distances.put(neighbour, calcDistanceToNeighbour);
                         predecessors.put(neighbour, (int) node.getId());
-                        unsettled.add((int) neighbour.getId());
+                        // always put a new object on the heap and avoid a costly decreaseKey operation
+                        // -> when polling the heap, make sure to check if we already visited the node
+                        unsettled.enqueue(neighbour.getId(), calcDistanceToNeighbour);
                     }
                 } catch (Exception e) {
                     logger.info("Exception occurred. Current node: {}, neighbours: {}, current neighbour: {}",
                             node.toString(), neighbours.size(), neighbour.toString());
                     logger.error("Exception: ", e);
-                    unsettled.clear();
                 }
             }
 
-            // we are done investigating all of the node's neighbours -> mark node as visited
+            // we investigated all of the node's neighbours -> mark node as visited
             settled.add(node.getId());
-//            unsettled.remove((int) node.getId());
         }
 
         if (distances.containsKey(target)) {
@@ -99,8 +98,6 @@ public class Dijkstra {
         }
 
         logger.info("Finished Dijkstra.");
-
-        return getNodesFromPredecessors();
     }
 
 
@@ -120,24 +117,6 @@ public class Dijkstra {
     }
 
 
-    private Node getMinimum(TLongSet unsettled) {
-        Node minimum = null;
-
-        TLongIterator iterator = unsettled.iterator();
-        while (iterator.hasNext()) {
-            long id = iterator.next();
-            Node node = nodes[(int) id];
-            if (minimum == null) {
-                minimum = node;
-            } else if (getShortestDistance(node) < getShortestDistance(minimum)) {
-                minimum = node;
-            }
-        }
-
-        return minimum;
-    }
-
-
     private double getShortestDistance(Node node) {
         if (distances.containsKey(node)) {
             return distances.get(node);
@@ -147,7 +126,7 @@ public class Dijkstra {
     }
 
 
-    private List<Node> getNodesFromPredecessors() {
+    public List<Node> retrieveShortestPath() {
         List<Node> path = new ArrayList<>(predecessors.size());
         Node routeNode = target;
         while (predecessors.containsKey(routeNode) && predecessors.get(routeNode) != -1) {
@@ -157,10 +136,5 @@ public class Dijkstra {
         path.add(source);
         Collections.reverse(path);
         return path;
-    }
-
-
-    public TObjectIntMap<Node> getPredecessors() {
-        return predecessors;
     }
 }

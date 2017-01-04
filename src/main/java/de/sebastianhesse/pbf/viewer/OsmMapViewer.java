@@ -7,7 +7,6 @@ import de.sebastianhesse.pbf.routing.Dijkstra;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
-import gnu.trove.map.TObjectIntMap;
 import org.apache.commons.lang3.StringUtils;
 import org.openstreetmap.gui.jmapviewer.Coordinate;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
@@ -33,6 +32,7 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -95,6 +95,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
                     nodeOptional.ifPresent(node -> {
                         logger.info("Found closest point: ({},{})", node.getLat(), node.getLon());
                         map().addMapMarker(new MapMarkerDot(node.getLat(), node.getLon()));
+
                         if (routeNodes[0] == null) {
                             routeNodes[0] = node;
                         } else {
@@ -105,23 +106,35 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
                         }
 
                         if (routeNodes[1] != null) {
-                            Dijkstra dijkstra = new Dijkstra(graph, routeNodes[0], routeNodes[1]);
-                            dijkstra.getShortestPath();
-
-                            // TODO: dijkstra already returns a list of nodes -> adapt it
-                            Layer route = new Layer("Route from " + routeNodes[0].getId() + " to " + routeNodes[1].getId());
-                            TObjectIntMap<Node> predecessors = dijkstra.getPredecessors();
-                            Node routeNode = routeNodes[1];
-                            while (predecessors.containsKey(routeNode) && predecessors.get(routeNode) != -1) {
-                                map().addMapMarker(new MapMarkerDot(route, routeNode.getLat(), routeNode.getLon()));
-                                routeNode = graph.getNodes()[predecessors.get(routeNode)];
-                            }
-                            treeMap.addLayer(route);
+                            runDijkstra();
                         }
                     });
                 }
             }
         });
+    }
+
+
+    private void runDijkstra() {
+        try {
+            Node source = routeNodes[0];
+            Node target = routeNodes[1];
+            Dijkstra dijkstra = new Dijkstra(graph, source, target);
+            dijkstra.start();
+            dijkstra.join();
+
+            List<Node> shortestPath = dijkstra.retrieveShortestPath();
+
+            Layer routeLayer = new Layer("From " + source.getId() + " to " + target.getId());
+            for (Node pathNode : shortestPath) {
+                MapMarkerDot marker = new MapMarkerDot(routeLayer, pathNode.getLat(), pathNode.getLon());
+                map().addMapMarker(marker);
+            }
+
+            treeMap.addLayer(routeLayer);
+        } catch (InterruptedException ex) {
+            logger.error("", ex);
+        }
     }
 
 
