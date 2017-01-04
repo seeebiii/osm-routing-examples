@@ -19,9 +19,8 @@ import java.util.List;
 
 
 /**
- * Reads an OSM file into a {@link Graph} object which contains nodes and edges.
- * Optimizes ways by removing all nodes which are just used for one way, i.e. there are mostly nodes on the
- * beginning/end of a way or where ways cross each other.
+ * Abstract class to read an OSM file into a {@link Graph} object which contains nodes and edges.
+ *
  */
 public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
 
