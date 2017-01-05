@@ -1,25 +1,31 @@
 # osm-routing-examples
-Contains examples how to read and route with OSM.
+A playground containing examples how to read OSM data and calculate routes. 
 
 ## Author
 Sebastian Hesse
 
-## PBF-Reader
-Example to show how to read nodes and ways of a OSM PBF file.
+## Examples
+Here are some example classes for different use cases.
+
+#### Note
+I prefer to use the word _node_ instead of _vertex_ in terms of graphs. So don't be irritated.
+
+### PBF-Reader
+Example to show how to read nodes and ways of an OSM PBF file.
 See [PbfReader](/src/main/java/de/sebastianhesse/pbf/reader/PbfReader.java)
 
-## NodeEdgeReader
-Example to show how to read nodes and ways into a graph of nodes and edges.
+### NodeEdgeReader
+Example to show how to simply read nodes and ways into a graph of nodes and edges.
 See [NodeEdgeReader](/src/main/java/de/sebastianhesse/pbf/reader/SimpleNodeEdgeReader.java)
 
-## OsmMapViewer
-Example to show how to connect OSM data with a Swing application.
+### OsmMapViewer
+Example to show how to connect OSM data with a Swing application and also be able to route between two points.
 See [OsmMapViewer](/src/main/java/de/sebastianhesse/pbf/viewer/OsmMapViewer.java)
 
 ## License
 MIT License
 
-Copyright (c) 2016 Sebastian Hesse
+Copyright (c) 2017 Sebastian Hesse
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

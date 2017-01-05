@@ -1,6 +1,8 @@
 package de.sebastianhesse.pbf.routing;
 
 /***********************************************************************
+ * http://keithschwarz.com/interesting/code/?dir=fibonacci-heap
+ *
  * File: FibonacciHeap.java
  * Author: Keith Schwarz (htiek@cs.stanford.edu)
  *
