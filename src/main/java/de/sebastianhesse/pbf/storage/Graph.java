@@ -223,20 +223,20 @@ public class Graph {
     }
 
 
-    public List<Node> getNeighboursOfNode(Node node, TLongSet settled) {
+    public List<Edge> getNeighboursOfNode(Node node, TLongSet settled) {
         int edgeOffset = node.getOffsetPointer();
 
         if (edgeOffset == -1) {
             // this might happen if a street ends and the street has just one way/direction
-            return new ArrayList<Node>();
+            return new ArrayList<>();
         }
 
-        List<Node> neighbours = new ArrayList<>();
+        List<Edge> neighbours = new ArrayList<>();
         for (int i = edgeOffset; i < this.edgeIdx; i++) {
             Edge edge = this.edges[i];
             if (edge.getSourceNode() == node.getId()) {
                 if (!settled.contains(edge.getTargetNode())) {
-                    neighbours.add(this.nodes[edge.getTargetNode()]);
+                    neighbours.add(edge);
                 }
             } else {
                 // this happens if there are no further edges for the node, so we can break out and return neighbours
