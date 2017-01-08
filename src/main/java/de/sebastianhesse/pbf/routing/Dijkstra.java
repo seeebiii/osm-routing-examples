@@ -1,5 +1,13 @@
 package de.sebastianhesse.pbf.routing;
 
+import de.sebastianhesse.pbf.reader.Accessor;
+import de.sebastianhesse.pbf.routing.accessors.CarAccessor;
+import de.sebastianhesse.pbf.routing.accessors.PedestrianAccessor;
+import de.sebastianhesse.pbf.routing.accessors.WayAccessor;
+import de.sebastianhesse.pbf.routing.calculators.CalculationResult;
+import de.sebastianhesse.pbf.routing.calculators.FastestPathCalculator;
+import de.sebastianhesse.pbf.routing.calculators.PathCalculator;
+import de.sebastianhesse.pbf.routing.calculators.ShortestPathCalculator;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
@@ -15,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -33,15 +42,19 @@ public class Dijkstra extends Thread {
     private TIntDoubleMap distances;
     // store nodes of shortest path
     private TIntIntMap predecessors;
+    private PathCalculator pathCalculator;
+    private DijkstraOptions options = DijkstraOptions.shortestWithCar();
 
 
-    public Dijkstra(Graph graph, Node source, Node target) {
+    public Dijkstra(Graph graph, Node source, Node target, DijkstraOptions options) {
         this.graph = graph;
         this.source = source;
         this.target = target;
         this.nodes = this.graph.getNodes();
         this.distances = new TIntDoubleHashMap(this.nodes.length);
         this.predecessors = new TIntIntHashMap(this.nodes.length);
+        this.options = options;
+        this.pathCalculator = getPathCalculator();
     }
 
 
@@ -71,17 +84,18 @@ public class Dijkstra extends Thread {
             // investigate all neighbours of the current node and update the distances, predecessors, etc
             List<Edge> neighbours = this.graph.getNeighboursOfNode(node, settled);
             for (Edge edge : neighbours) {
+                int targetNodeId = edge.getTargetNode();
                 try {
-                    double calcDistanceToNeighbour = getShortestDistance(edge.getSourceNode()) + edge.getDistance();
-                    if (getShortestDistance(edge.getTargetNode()) > calcDistanceToNeighbour) {
-                        distances.put(edge.getTargetNode(), calcDistanceToNeighbour);
-                        predecessors.put(edge.getTargetNode(), (int) node.getId());
+                    Optional<CalculationResult> result = this.pathCalculator.checkNeighbourAndCosts(node, edge);
+                    result.ifPresent(calculationResult -> {
+                        distances.put(targetNodeId, calculationResult.weight);
+                        predecessors.put(targetNodeId, (int) node.getId());
                         // always put a new object on the heap and avoid a costly decreaseKey operation
                         // -> when polling the heap, make sure to check if we already visited the node
-                        unsettled.enqueue(edge.getTargetNode(), calcDistanceToNeighbour);
-                    }
+                        unsettled.enqueue(targetNodeId, calculationResult.weight);
+                    });
                 } catch (Exception e) {
-                    Node neighbour = nodes[edge.getTargetNode()];
+                    Node neighbour = nodes[targetNodeId];
                     logger.info("Exception occurred. Current node: {}, neighbours: {}, current neighbour: {}",
                             node.toString(), neighbours.size(), neighbour.toString());
                     logger.error("Exception: ", e);
@@ -102,15 +116,6 @@ public class Dijkstra extends Thread {
     }
 
 
-    private double getShortestDistance(int nodeId) {
-        if (distances.containsKey(nodeId)) {
-            return distances.get(nodeId);
-        } else {
-            return Double.MAX_VALUE;
-        }
-    }
-
-
     public List<Node> retrieveShortestPath() {
         List<Node> path = new ArrayList<>(predecessors.size());
         Node routeNode = target;
@@ -121,5 +126,24 @@ public class Dijkstra extends Thread {
         path.add(source);
         Collections.reverse(path);
         return path;
+    }
+
+
+    private PathCalculator getPathCalculator() {
+        switch (options.getCalculationType()) {
+            case FASTEST:
+                WayAccessor accessor;
+                if (options.getAccessor().equals(Accessor.CAR)) {
+                    accessor = new CarAccessor();
+                } else {
+                    accessor = new PedestrianAccessor();
+                }
+
+                return new FastestPathCalculator(this.distances, accessor);
+            case SHORTEST:
+                return new ShortestPathCalculator(this.distances);
+            default:
+                throw new IllegalStateException("Dijkstra options have a mismatching state: neither fastest or shortest type was selected.");
+        }
     }
 }

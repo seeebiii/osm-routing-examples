@@ -14,6 +14,8 @@ public class Edge {
     private int targetNode;
     private double distance = 0;
     private short speed = 0;
+    // allowed: car, pedestrian
+    private boolean[] access = new boolean[] {false, false};
 
 
     public Edge(int sourceNode, int targetNode) {
@@ -49,6 +51,21 @@ public class Edge {
 
     public void setSpeed(short speed) {
         this.speed = speed;
+    }
+
+
+    public void setAccess(boolean[] access) {
+        this.access = access;
+    }
+
+
+    public boolean isCarAllowed() {
+        return this.access[0];
+    }
+
+
+    public boolean isPedestrianAllowed() {
+        return this.access[1];
     }
 
 

@@ -39,7 +39,7 @@ public class PbfReader {
     protected TLongIntMap nodeCounter = new TLongIntHashMap();
     protected List<Object> ways = new ArrayList<>();
     protected DistanceCalc distanceCalc = new DistanceCalcEarth();
-    protected ReaderElementValidator validator = new ReaderElementValidator();
+    protected ReaderWayValidator validator = new ReaderWayValidator();
     protected File osmFile = null;
 
     private String outputFilePath = null;

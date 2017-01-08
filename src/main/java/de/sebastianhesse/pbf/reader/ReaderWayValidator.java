@@ -12,13 +12,14 @@ import java.util.Set;
 /**
  * A custom validator for graph data.
  */
-public class ReaderElementValidator {
+public class ReaderWayValidator {
 
-    protected Set<String> notAcceptedTags = new HashSet<>();
-    protected Map<String, Short> maxSpeeds = new HashMap<>();
+    protected static Set<String> notAcceptedTags = new HashSet<>();
+    protected static Map<String, Short> maxSpeeds = new HashMap<>();
+    protected static Set<String> positiveRestrictions = new HashSet<>();
 
 
-    public ReaderElementValidator() {
+    public ReaderWayValidator() {
         notAcceptedTags.add("barrier");
         notAcceptedTags.add("amenity");
         notAcceptedTags.add("leisure");
@@ -45,11 +46,15 @@ public class ReaderElementValidator {
         maxSpeeds.put("road", (short) 20);
         maxSpeeds.put("track", (short) 15);
 
+        positiveRestrictions.add("yes");
+        positiveRestrictions.add("unknown");
+        positiveRestrictions.add("permissive");
+        positiveRestrictions.add("destination");
     }
 
 
     public boolean isValidWay(ReaderWay way) {
-        for (String notAcceptedTag : this.notAcceptedTags) {
+        for (String notAcceptedTag : notAcceptedTags) {
             if (StringUtils.isNotBlank(way.getTag(notAcceptedTag))) {
                 return false;
             }
@@ -92,12 +97,30 @@ public class ReaderElementValidator {
                     return 1;
                 }
 
-                Short speed = this.maxSpeeds.get(highwayType);
+                Short speed = maxSpeeds.get(highwayType);
                 if (speed == null) {
                     return 0;
                 } else {
                     return speed;
                 }
+            }
+        }
+    }
+
+
+    public boolean hasAccess(ReaderWay way, Accessor accessor) {
+        if (!way.hasTag("access") && !way.hasTag("motorcar") && !way.hasTag("motor_vehicle")) {
+            return true;
+        } else {
+            switch (accessor) {
+                case CAR:
+                    return way.hasTag("motorcar", positiveRestrictions) ||
+                            way.hasTag("motor_vehicle", positiveRestrictions) ||
+                            way.hasTag("access", positiveRestrictions);
+                case PEDESTRIAN:
+                    return way.hasTag("foot", positiveRestrictions);
+                default:
+                    return false;
             }
         }
     }

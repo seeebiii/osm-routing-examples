@@ -4,6 +4,7 @@ import com.graphhopper.reader.ReaderElement;
 import com.graphhopper.reader.ReaderNode;
 import com.graphhopper.reader.ReaderWay;
 import com.graphhopper.reader.osm.OSMInputFile;
+import de.sebastianhesse.pbf.reader.Way.WayBuilder;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
@@ -29,7 +30,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
     protected TLongIntMap nodeCounter = new TLongIntHashMap();
     protected TLongIntMap osmIdMapping;
     protected List<Object> ways = new ArrayList<>();
-    protected ReaderElementValidator validator = new ReaderElementValidator();
+    protected ReaderWayValidator validator = new ReaderWayValidator();
     protected Graph graph;
     protected File osmFile = null;
 
@@ -89,13 +90,13 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
         processFile("way", item -> {
             switch (item.getType()) {
                 case ReaderElement.WAY:
-                    ReaderWay way = (ReaderWay) item;
-                    final TLongList nodeList = way.getNodes();
+                    ReaderWay readerWay = (ReaderWay) item;
+                    final TLongList nodeList = readerWay.getNodes();
 
-                    if (this.validator.isValidWay(way) && nodeList.size() > 1) {
+                    if (this.validator.isValidWay(readerWay) && nodeList.size() > 1) {
                         processWayNodes(nodeList);
-                        short speed = this.validator.getMaxSpeed(way);
-                        this.ways.add(new Way(way, this.validator.isOneWay(way), speed));
+                        Way way = new WayBuilder().setOriginalWay(readerWay).build();
+                        this.ways.add(way);
                         return true;
                     }
             }
@@ -170,14 +171,11 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
     protected Edge getEdge(Way way, int sourceNodeIndex, int targetNodeIndex) {
         Edge edge = new Edge(sourceNodeIndex, targetNodeIndex);
 
-        // calc distance
         Node source = this.graph.getNodes()[sourceNodeIndex];
         Node target = this.graph.getNodes()[targetNodeIndex];
-        double distance = getDistance(source, target);
-        edge.setDistance(distance);
-
-        // speed
+        edge.setDistance(getDistance(source, target));
         edge.setSpeed(way.getMaxSpeed());
+        edge.setAccess(way.getAccess());
 
         return edge;
     }

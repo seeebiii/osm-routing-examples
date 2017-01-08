@@ -1,9 +1,12 @@
 package de.sebastianhesse.pbf.viewer;
 
+import de.sebastianhesse.pbf.reader.Accessor;
 import de.sebastianhesse.pbf.reader.NodeEdgeReader;
 import de.sebastianhesse.pbf.reader.OptimizedNodeEdgeReader;
 import de.sebastianhesse.pbf.reader.SimpleNodeEdgeReader;
 import de.sebastianhesse.pbf.routing.Dijkstra;
+import de.sebastianhesse.pbf.routing.DijkstraOptions;
+import de.sebastianhesse.pbf.routing.calculators.CalculationType;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
@@ -23,9 +26,11 @@ import org.openstreetmap.gui.jmapviewer.tilesources.OsmTileSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import java.awt.BorderLayout;
@@ -54,6 +59,8 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
     private boolean optimizeWays = false;
     private Graph graph;
     private Node[] routeNodes = new Node[2];
+    private CalculationType calculationType = CalculationType.SHORTEST;
+    private Accessor wayAccessor = Accessor.CAR;
 
 
     /**
@@ -68,7 +75,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
         treeMap = new JMapViewerTree("Zones");
         setupJFrame();
-        setupPanels();
+        setupBasicPanels();
 
         // Listen to the map viewer for user operations so components will
         // receive events and updates
@@ -119,7 +126,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
         try {
             Node source = routeNodes[0];
             Node target = routeNodes[1];
-            Dijkstra dijkstra = new Dijkstra(graph, source, target);
+            Dijkstra dijkstra = new Dijkstra(graph, source, target, new DijkstraOptions(this.wayAccessor, this.calculationType));
             dijkstra.start();
             dijkstra.join();
 
@@ -140,33 +147,31 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
     private void setupJFrame() {
         setSize(400, 400);
-        setLayout(new BorderLayout());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
     }
 
 
-    private void setupPanels() {
+    private void setupBasicPanels() {
         JPanel panel = new JPanel();
-        JPanel panelTop = new JPanel();
-        JPanel helpPanel = new JPanel();
+        add(panel, BorderLayout.PAGE_START);
 
+        JPanel panelTop = new JPanel();
         mperpLabelName = new JLabel("Meters/Pixels: ");
         mperpLabelValue = new JLabel(String.format("%s", map().getMeterPerPixel()));
         zoomLabel = new JLabel("Zoom: ");
         zoomValue = new JLabel(String.format("%s", map().getZoom()));
-
-        add(panel, BorderLayout.NORTH);
-        add(helpPanel, BorderLayout.SOUTH);
-        panel.add(panelTop, BorderLayout.NORTH);
-        JLabel helpLabel = new JLabel("Use right mouse button to move,\n "
-                + "left double click or mouse wheel to zoom.");
-        helpPanel.add(helpLabel);
-
         panelTop.add(zoomLabel);
         panelTop.add(zoomValue);
         panelTop.add(mperpLabelName);
         panelTop.add(mperpLabelValue);
+        panel.add(panelTop, BorderLayout.CENTER);
+
+        JPanel helpPanel = new JPanel();
+        JLabel helpLabel = new JLabel("Use right mouse button to move,\n "
+                + "left double click or mouse wheel to zoom.");
+        helpPanel.add(helpLabel);
+        add(helpPanel, BorderLayout.PAGE_END);
     }
 
 
@@ -189,16 +194,106 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
 
     private void addNodeEdgePanel() {
         logger.info("--- Starting to add nodes and edges to panel. ---");
-        JPanel nodeEdgePanel = new JPanel();
+        JPanel nodeEdgePanel = new JPanel(new BorderLayout());
 
+        JPanel nodePanel = new JPanel(new BorderLayout());
+        JLabel nodeLabel = new JLabel("Nodes:");
         JScrollPane nodeScrollPane = createNodeScrollPane();
-        JScrollPane edgeScrollPane = createEdgeScrollPane();
+        nodePanel.add(nodeLabel, BorderLayout.PAGE_START);
+        nodePanel.add(nodeScrollPane, BorderLayout.CENTER);
 
-        nodeEdgePanel.add(nodeScrollPane);
-        nodeEdgePanel.add(edgeScrollPane);
+        JPanel edgePanel = new JPanel(new BorderLayout());
+        JLabel edgeLabel = new JLabel("Edges:");
+        JScrollPane edgeScrollPane = createEdgeScrollPane();
+        edgePanel.add(edgeLabel, BorderLayout.PAGE_START);
+        edgePanel.add(edgeScrollPane, BorderLayout.CENTER);
+
+        nodeEdgePanel.add(nodePanel, BorderLayout.PAGE_START);
+        nodeEdgePanel.add(edgePanel, BorderLayout.PAGE_END);
         nodeEdgePanel.setVisible(true);
 
-        add(nodeEdgePanel, BorderLayout.WEST);
+        add(nodeEdgePanel, BorderLayout.LINE_START);
+        addRoutingOptions();
+    }
+
+
+    private void addRoutingOptions() {
+        JPanel radioPanel = new JPanel(new BorderLayout());
+        radioPanel.setSize(100, 100);
+
+        addRoutingTypePanel(radioPanel);
+        addWayAccessorPanel(radioPanel);
+
+        add(radioPanel, BorderLayout.LINE_END);
+    }
+
+
+    private void addRoutingTypePanel(JPanel parent) {
+        JPanel routingTypePanel = new JPanel(new BorderLayout());
+        JLabel routingTypeLabel = new JLabel("Routing type:");
+        routingTypePanel.add(routingTypeLabel, BorderLayout.PAGE_START);
+
+        JRadioButton fastestRoute = new JRadioButton("Fastest");
+        fastestRoute.setSelected(false);
+        fastestRoute.setActionCommand(CalculationType.FASTEST.name());
+        fastestRoute.addActionListener(e -> {
+            setCalulcationType(e.getActionCommand());
+        });
+        routingTypePanel.add(fastestRoute, BorderLayout.LINE_START);
+
+        JRadioButton shortestRoute = new JRadioButton("Shortest");
+        shortestRoute.setSelected(true);
+        shortestRoute.setActionCommand(CalculationType.SHORTEST.name());
+        shortestRoute.addActionListener(e -> {
+            setCalulcationType(e.getActionCommand());
+        });
+        routingTypePanel.add(shortestRoute, BorderLayout.LINE_END);
+
+        ButtonGroup calculationTypeGroup = new ButtonGroup();
+        calculationTypeGroup.add(fastestRoute);
+        calculationTypeGroup.add(shortestRoute);
+
+        parent.add(routingTypePanel, BorderLayout.PAGE_START);
+    }
+
+
+    private void addWayAccessorPanel(JPanel parent) {
+        JPanel wayAccessorPanel = new JPanel(new BorderLayout());
+
+        JLabel wayAccessorLabel = new JLabel("Way Accessor:");
+        wayAccessorPanel.add(wayAccessorLabel, BorderLayout.PAGE_START);
+
+        JRadioButton carAccessor = new JRadioButton("Car");
+        carAccessor.setSelected(true);
+        carAccessor.setActionCommand(Accessor.CAR.name());
+        carAccessor.addActionListener(e -> {
+            setWayAccessor(e.getActionCommand());
+        });
+        wayAccessorPanel.add(carAccessor, BorderLayout.LINE_START);
+
+        JRadioButton pedestrianAccessor = new JRadioButton("Pedestrian");
+        pedestrianAccessor.setSelected(false);
+        pedestrianAccessor.setActionCommand(Accessor.PEDESTRIAN.name());
+        pedestrianAccessor.addActionListener(e -> {
+            setWayAccessor(e.getActionCommand());
+        });
+        wayAccessorPanel.add(pedestrianAccessor, BorderLayout.LINE_END);
+
+        ButtonGroup wayAccessorGroup = new ButtonGroup();
+        wayAccessorGroup.add(carAccessor);
+        wayAccessorGroup.add(pedestrianAccessor);
+
+        parent.add(wayAccessorPanel, BorderLayout.PAGE_END);
+    }
+
+
+    private void setWayAccessor(String actionCommand) {
+        this.wayAccessor = Accessor.valueOf(actionCommand);
+    }
+
+
+    private void setCalulcationType(String type) {
+        this.calculationType = CalculationType.valueOf(type);
     }
 
 
@@ -241,6 +336,16 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
     }
 
 
+    private JScrollPane getScrollPane(String[] columnNames, Object[][] data) {
+        JTable table = new JTable(data, columnNames);
+        table.setPreferredScrollableViewportSize(new Dimension(400, 400));
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setVisible(true);
+        scrollPane.setAutoscrolls(true);
+        return scrollPane;
+    }
+
+
     private void visualizeDataBoundariesOnMap() {
         Node[][] graphBoundaries = this.graph.getGraphBoundaries();
         Node upLeft = graphBoundaries[0][0];
@@ -249,16 +354,6 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
         Node lowRight = graphBoundaries[1][1];
         MapPolygon dataBoundaries = new MapPolygonImpl(c(upLeft), c(upRight), c(lowRight), c(lowLeft));
         map().addMapPolygon(dataBoundaries);
-    }
-
-
-    private JScrollPane getScrollPane(String[] columnNames, Object[][] data) {
-        JTable table = new JTable(data, columnNames);
-        table.setPreferredScrollableViewportSize(new Dimension(400, 800));
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setVisible(true);
-        scrollPane.setAutoscrolls(true);
-        return scrollPane;
     }
 
 
