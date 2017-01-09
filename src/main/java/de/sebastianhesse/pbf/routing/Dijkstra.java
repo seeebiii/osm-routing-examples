@@ -86,7 +86,7 @@ public class Dijkstra extends Thread {
             for (Edge edge : neighbours) {
                 int targetNodeId = edge.getTargetNode();
                 try {
-                    Optional<CalculationResult> result = this.pathCalculator.checkNeighbourAndCosts(node, edge);
+                    Optional<CalculationResult> result = this.pathCalculator.calculateCostsToNeighbour(node, edge);
                     result.ifPresent(calculationResult -> {
                         distances.put(targetNodeId, calculationResult.weight);
                         predecessors.put(targetNodeId, (int) node.getId());
@@ -130,20 +130,20 @@ public class Dijkstra extends Thread {
 
 
     private PathCalculator getPathCalculator() {
+        WayAccessor accessor;
+        if (options.getAccessor().equals(Accessor.CAR)) {
+            accessor = new CarAccessor();
+        } else {
+            accessor = new PedestrianAccessor();
+        }
+
         switch (options.getCalculationType()) {
             case FASTEST:
-                WayAccessor accessor;
-                if (options.getAccessor().equals(Accessor.CAR)) {
-                    accessor = new CarAccessor();
-                } else {
-                    accessor = new PedestrianAccessor();
-                }
-
                 return new FastestPathCalculator(this.distances, accessor);
             case SHORTEST:
-                return new ShortestPathCalculator(this.distances);
+                return new ShortestPathCalculator(this.distances, accessor);
             default:
-                throw new IllegalStateException("Dijkstra options have a mismatching state: neither fastest or shortest type was selected.");
+                throw new IllegalStateException("Dijkstra options have a mismatching state: neither fastest nor shortest type was selected.");
         }
     }
 }

@@ -1,5 +1,6 @@
 package de.sebastianhesse.pbf.routing.calculators;
 
+import de.sebastianhesse.pbf.routing.accessors.WayAccessor;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Node;
 import gnu.trove.map.TIntDoubleMap;
@@ -8,12 +9,12 @@ import java.util.Optional;
 
 
 /**
- *
+ * Implements a shortest path approach for Dijkstra. Costs: distance
  */
-public class ShortestPathCalculator extends AbstractPathCalculator implements PathCalculator {
+public class ShortestPathCalculator extends AbstractPathCalculator {
 
-    public ShortestPathCalculator(TIntDoubleMap distances) {
-        super(distances);
+    public ShortestPathCalculator(TIntDoubleMap distances, WayAccessor wayAccessor) {
+        super(distances, wayAccessor);
     }
 
 
@@ -26,7 +27,4 @@ public class ShortestPathCalculator extends AbstractPathCalculator implements Pa
         }
         return Optional.empty();
     }
-
-
-
 }

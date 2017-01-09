@@ -6,10 +6,12 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 
 /**
- *
+ * Connection between a source and a target node. Has some certain properties like allowed speed,
+ * distance (from source to target) or access rights for different vehicles.
  */
 public class Edge {
 
+    private String type;
     private int sourceNode;
     private int targetNode;
     private double distance = 0;
@@ -18,9 +20,15 @@ public class Edge {
     private boolean[] access = new boolean[] {false, false};
 
 
-    public Edge(int sourceNode, int targetNode) {
+    public Edge(String type, int sourceNode, int targetNode) {
+        this.type = type;
         this.sourceNode = sourceNode;
         this.targetNode = targetNode;
+    }
+
+
+    public String getType() {
+        return type;
     }
 
 

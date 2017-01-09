@@ -8,7 +8,8 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Reads an OSM file into a {@link Graph} object which contains nodes and edges.
+ * Reads an OSM file into a {@link Graph} object which contains nodes and edges. Does no optimization,
+ * just simple reading.
  */
 public class SimpleNodeEdgeReader extends AbstractNodeEdgeReader {
 

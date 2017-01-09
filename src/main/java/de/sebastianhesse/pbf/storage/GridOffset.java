@@ -1,7 +1,8 @@
 package de.sebastianhesse.pbf.storage;
 
 /**
- *
+ * Offset class to be used for a {@link Graph} to structure objects within an array using a certain ordering.
+ * Indicates the starting offset and a link to the next offset to simplify searching.
  */
 public class GridOffset {
 

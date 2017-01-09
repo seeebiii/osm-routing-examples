@@ -9,22 +9,19 @@ import java.util.Optional;
 
 
 /**
- *
+ * Implements a fastest path approach for Dijkstra. Costs are: distance / speed
  */
-public class FastestPathCalculator extends AbstractPathCalculator implements PathCalculator {
-
-    private WayAccessor wayAccessor;
+public class FastestPathCalculator extends AbstractPathCalculator {
 
 
     public FastestPathCalculator(TIntDoubleMap distances, WayAccessor wayAccessor) {
-        super(distances);
-        this.wayAccessor = wayAccessor;
+        super(distances, wayAccessor);
     }
 
 
     @Override
     public Optional<CalculationResult> checkNeighbourAndCosts(Node node, Edge edge) {
-        if (wayAccessor.canAccessWay(edge) && edge.getSpeed() > 0) {
+        if (edge.getSpeed() > 0) {
             double weightToNeighbour = getExistingDistance((int) node.getId()) + edge.getDistance() / edge.getSpeed();
             if (getExistingDistance(edge.getTargetNode()) > weightToNeighbour) {
                 return Optional.of(new CalculationResult(edge.getTargetNode(), weightToNeighbour));

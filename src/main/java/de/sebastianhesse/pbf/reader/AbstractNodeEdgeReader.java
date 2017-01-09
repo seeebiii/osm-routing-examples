@@ -169,7 +169,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
 
 
     protected Edge getEdge(Way way, int sourceNodeIndex, int targetNodeIndex) {
-        Edge edge = new Edge(sourceNodeIndex, targetNodeIndex);
+        Edge edge = new Edge(way.getType(), sourceNodeIndex, targetNodeIndex);
 
         Node source = this.graph.getNodes()[sourceNodeIndex];
         Node target = this.graph.getNodes()[targetNodeIndex];
