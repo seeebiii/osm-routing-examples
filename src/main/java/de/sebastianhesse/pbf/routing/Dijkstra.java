@@ -1,5 +1,6 @@
 package de.sebastianhesse.pbf.routing;
 
+import com.google.common.collect.Lists;
 import de.sebastianhesse.pbf.reader.Accessor;
 import de.sebastianhesse.pbf.routing.accessors.CarAccessor;
 import de.sebastianhesse.pbf.routing.accessors.PedestrianAccessor;
@@ -60,6 +61,7 @@ public class Dijkstra extends Thread {
 
     @Override
     public void run() {
+        long startTime = System.currentTimeMillis();
         logger.info("Starting Dijkstra.");
 
         TLongSet settled = new TLongHashSet();
@@ -110,13 +112,19 @@ public class Dijkstra extends Thread {
             logger.info("Distance to target: {}", distances.get((int) target.getId()));
         } else {
             logger.info("Can't find a way to target.");
+            predecessors.clear();
+            distances.clear();
         }
 
-        logger.info("Finished Dijkstra.");
+        logger.info("Finished Dijkstra in {} ms.", (System.currentTimeMillis() - startTime));
     }
 
 
     public List<Node> retrieveShortestPath() {
+        if (predecessors.isEmpty()) {
+            return Lists.newArrayList();
+        }
+
         List<Node> path = new ArrayList<>(predecessors.size());
         Node routeNode = target;
         while (predecessors.containsKey((int) routeNode.getId()) && predecessors.get((int) routeNode.getId()) != -1) {
