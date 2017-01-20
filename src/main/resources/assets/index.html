@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MyMap</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
+  <link rel="stylesheet" href="css/index.css" />
+  <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
+  <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+      integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+      crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <h1>Map</h1>
+
+  <form>
+    <label for="vehicle">Vehicle: </label>
+    <select id="vehicle">
+      <option>Car</option>
+      <option>Pedestrian</option>
+    </select>
+    <br />
+    <label for="mode">Mode: </label>
+    <select id="mode">
+      <option>Fastest</option>
+      <option>Shortest</option>
+    </select>
+  </form>
+
+  <div id="map"></div>
+
+
+  <script type="text/javascript" src="js/index.js"></script>
+</body>
+</html>
