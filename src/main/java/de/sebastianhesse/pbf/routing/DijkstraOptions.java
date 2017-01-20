@@ -5,7 +5,9 @@ import de.sebastianhesse.pbf.routing.calculators.CalculationType;
 
 
 /**
- *
+ * Options for Dijkstra. Accepts different accessors and calculation modes.
+ * @see Accessor for accessor types
+ * @see CalculationType for calculation mode
  */
 public class DijkstraOptions {
 

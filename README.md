@@ -22,6 +22,22 @@ See [NodeEdgeReader](/src/main/java/de/sebastianhesse/pbf/reader/SimpleNodeEdgeR
 Example to show how to connect OSM data with a Swing application and also be able to route between two points.
 See [OsmMapViewer](/src/main/java/de/sebastianhesse/pbf/viewer/OsmMapViewer.java)
 
+### Dropwizard Server
+A Dropwizard application setting up a routing api accessible via REST.
+See [DropwizardPackage](/src/main/java/de/sebastianhesse/pbf/dropwizard)
+
+In order to start the server:
+```
+$ mvn clean package
+$ java -jar target/osm-routing-examples.jar server /path/to/config.yml /path/to/osm/file
+```
+
+Access it with:
+```
+vehicle: car, pedestrian
+mode: fastest, shortest 
+GET /api/route?lat1=...&lon1=...&lat2=...&lon2=...&vehicle=car&mode=fastest
+```
 ## License
 MIT License
 
