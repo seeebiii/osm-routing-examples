@@ -15,6 +15,7 @@ public class Node implements Comparable<Node> {
     private double lat;
     private double lon;
     private int offsetPointer = -1;
+    private boolean isGasStation = false;
 
 
     public Node(double lat, double lon) {
@@ -50,6 +51,16 @@ public class Node implements Comparable<Node> {
 
     public void setOffsetPointer(int offsetPointer) {
         this.offsetPointer = offsetPointer;
+    }
+
+
+    public boolean isGasStation() {
+        return isGasStation;
+    }
+
+
+    public void setGasStation(boolean gasStation) {
+        isGasStation = gasStation;
     }
 
 

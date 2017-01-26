@@ -3,6 +3,7 @@ package de.sebastianhesse.pbf.dropwizard;
 import de.sebastianhesse.pbf.dropwizard.healtchecks.GraphHealthCheck;
 import de.sebastianhesse.pbf.dropwizard.healtchecks.StrategyHealthCheck;
 import de.sebastianhesse.pbf.dropwizard.resources.HelloWorldResource;
+import de.sebastianhesse.pbf.dropwizard.resources.GasStationResource;
 import de.sebastianhesse.pbf.dropwizard.resources.RoutingResource;
 import de.sebastianhesse.pbf.reader.NodeEdgeReader;
 import de.sebastianhesse.pbf.reader.OptimizedNodeEdgeReader;
@@ -80,9 +81,12 @@ public class DropwizardApplication extends Application<DropwizardConfiguration> 
         final RoutingResource routingResource = new RoutingResource(graph);
         environment.jersey().register(routingResource);
 
+        final GasStationResource gasStationResource = new GasStationResource(graph);
+        environment.jersey().register(gasStationResource);
+
         // health checks
         environment.healthChecks().register("GraphHealthCheck", new GraphHealthCheck(graph));
-        environment.healthChecks().register("ReaderStrategyHealtCheck", new StrategyHealthCheck(configuration));
+        environment.healthChecks().register("ReaderStrategyHealthCheck", new StrategyHealthCheck(configuration));
     }
 
 

@@ -8,6 +8,7 @@ import de.sebastianhesse.pbf.reader.Way.WayBuilder;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
+import de.sebastianhesse.pbf.util.GraphUtil;
 import gnu.trove.list.TLongList;
 import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TLongIntHashMap;
@@ -69,6 +70,8 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
             readNodesOfWays();
             logger.info("--------------------------- SORT NODES -----------------------");
             sortNodes();
+            logger.info("--------------------------- READ GAS STATIONS ----------------");
+            readGasStations();
             logger.info("--------------------------- READ EDGES -----------------------");
             readEdgesOfWays();
             logger.info("--------------------------- SORT GRAPH -----------------------");
@@ -132,6 +135,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
                     if (this.nodeCounter.containsKey(readerNode.getId())) {
                         final Node node = new Node(readerNode.getLat(), readerNode.getLon());
                         node.setId(readerNode.getId());
+                        node.setGasStation(readerNode.hasTag("amenity", "fuel"));
                         int nodeIndex = this.graph.addNode(node);
                         this.osmIdMapping.put(readerNode.getId(), nodeIndex);
 
@@ -150,6 +154,29 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
             this.osmIdMapping.put(nodes[i].getId(), i);
         }
         logger.info("Sorted nodes according to latitude/longitude.");
+    }
+
+
+    protected void readGasStations() throws Exception {
+        processFile("gas stations", item -> {
+            switch (item.getType()) {
+                case ReaderElement.NODE:
+                    ReaderNode readerNode = (ReaderNode) item;
+                    if (readerNode.hasTag("amenity", "fuel")) {
+                        Node node = new Node(readerNode.getLat(), readerNode.getLon());
+                        node.setGasStation(true);
+                        if (this.osmIdMapping.containsKey(readerNode.getId())) {
+                            this.graph.addGasStation(node, this.osmIdMapping.get(readerNode.getId()));
+                        } else {
+                            this.graph.addGasStation(node);
+                        }
+
+                        return true;
+                    }
+            }
+
+            return false;
+        });
     }
 
 
@@ -173,26 +200,11 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
 
         Node source = this.graph.getNodes()[sourceNodeIndex];
         Node target = this.graph.getNodes()[targetNodeIndex];
-        edge.setDistance(getDistance(source, target));
+        edge.setDistance(GraphUtil.getDistance(source, target));
         edge.setSpeed(way.getMaxSpeed());
         edge.setAccess(way.getAccess());
 
         return edge;
-    }
-
-
-    protected double getDistance(Node node, Node target) {
-        double R = 6372800; // metres
-        double lat1 = node.getLat();
-        double lat2 = target.getLat();
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(target.getLon() - target.getLon());
-        lat1 = Math.toRadians(lat1);
-        lat2 = Math.toRadians(lat2);
-
-        double a = Math.pow(Math.sin(dLat / 2), 2) + Math.pow(Math.sin(dLon / 2), 2) * Math.cos(lat1) * Math.cos(lat2);
-        double c = 2 * Math.asin(Math.sqrt(a));
-        return R * c;
     }
 
 

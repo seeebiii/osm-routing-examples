@@ -1,6 +1,9 @@
 package de.sebastianhesse.pbf.storage;
 
 import de.sebastianhesse.pbf.exceptions.OutOfRangeException;
+import de.sebastianhesse.pbf.util.GraphUtil;
+import gnu.trove.map.TObjectLongMap;
+import gnu.trove.map.hash.TObjectLongHashMap;
 import gnu.trove.set.TLongSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 /**
@@ -24,6 +28,7 @@ public class Graph {
 
     private Node[] nodes = null;
     private Edge[] edges = null;
+    private TObjectLongMap<Node> gasStations = new TObjectLongHashMap<>();
 
     private int nodeIdx = 0;
     private int edgeIdx = 0;
@@ -275,6 +280,23 @@ public class Graph {
         } catch (OutOfRangeException e) {
             return Optional.empty();
         }
+    }
+
+
+    public void addGasStation(Node node, long idx) {
+        this.gasStations.put(node, idx);
+    }
+
+
+    public void addGasStation(Node node) {
+        this.addGasStation(node, -1);
+    }
+
+
+    public List<Node> getGasStationsAround(Node source, short maxDistance) {
+        return this.gasStations.keySet().stream()
+                .filter(node -> GraphUtil.getDistance(source, node) <= maxDistance * 1000)
+                .collect(Collectors.toList());
     }
 
 
