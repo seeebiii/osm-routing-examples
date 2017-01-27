@@ -1,10 +1,13 @@
 # osm-routing-examples
-A playground containing examples how to read OSM data and calculate routes. 
+A playground containing examples how to read OSM data and calculate routes. Also provides a basic Swing 
+application for routing and a website to for routing and finding POIs.
 
 ## Author
 Sebastian Hesse
 
 ## Examples
+![Browser view of the routing website](/docu/img/browser_view.jpg "Browser View")
+
 Here are some example classes for different use cases.
 
 #### Note
@@ -23,7 +26,7 @@ Example to show how to connect OSM data with a Swing application and also be abl
 See [OsmMapViewer](/src/main/java/de/sebastianhesse/pbf/viewer/OsmMapViewer.java)
 
 ### Dropwizard Server
-A Dropwizard application setting up a routing api accessible via REST.
+A Dropwizard application setting up a routing API accessible via REST.
 See [DropwizardPackage](/src/main/java/de/sebastianhesse/pbf/dropwizard)
 
 In order to start the server:
@@ -32,12 +35,24 @@ $ mvn clean package
 $ java -jar target/osm-routing-examples.jar server /path/to/config.yml /path/to/osm/file
 ```
 
-Access it with:
+A web frontend will be served from:
 ```
+http://localhost:8080/index.html
+```
+
+Access the REST API with:
+```
+### Get a path between two points (lat1,lon1) and (lat2,lon2) ###
 vehicle: car, pedestrian
 mode: fastest, shortest 
 GET /api/route?lat1=...&lon1=...&lat2=...&lon2=...&vehicle=car&mode=fastest
+
+
+### Get all gas stations around a given position ###
+maxDistance: maximum distance to search for gas stations around the position
+GET /api/gasstations?lat=...&lon=...&maxDistance=20
 ```
+
 ## License
 MIT License
 
