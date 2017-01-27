@@ -6,7 +6,7 @@
 
     <groupId>de.sebastianhesse.osm-routing</groupId>
     <artifactId>osm-routing-examples</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
 
     <repositories>
         <repository>
@@ -17,6 +17,7 @@
     </repositories>
 
     <dependencies>
+        <!-- used for setting up the REST API and serve static files like HTML, CSS and JS -->
         <dependency>
             <groupId>io.dropwizard</groupId>
             <artifactId>dropwizard-core</artifactId>
@@ -28,11 +29,21 @@
             <version>${dropwizard.version}</version>
         </dependency>
 
+        <!-- used for reading a OSM pbf file -->
         <dependency>
             <groupId>com.graphhopper</groupId>
             <artifactId>graphhopper-reader-osm</artifactId>
             <version>0.9-SNAPSHOT</version>
         </dependency>
+
+        <!-- used to visualise a map in a Swing application and route between two points -->
+        <dependency>
+            <groupId>org.openstreetmap.jmapviewer</groupId>
+            <artifactId>jmapviewer</artifactId>
+            <version>2.0</version>
+        </dependency>
+
+        <!-- common helper modules -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -42,11 +53,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.openstreetmap.jmapviewer</groupId>
-            <artifactId>jmapviewer</artifactId>
-            <version>2.0</version>
         </dependency>
     </dependencies>
 
@@ -122,8 +128,10 @@
                         </goals>
                         <configuration>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>de.sebastianhesse.pbf.dropwizard.DropwizardApplication</mainClass>
                                 </transformer>
                             </transformers>
