@@ -6,6 +6,7 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
   <link rel="stylesheet" href="css/index.css" />
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
   <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
   <script src="https://code.jquery.com/jquery-3.1.1.min.js"
       integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
@@ -13,23 +14,59 @@
 </head>
 <body>
 
-  <h1>Map</h1>
+  <h1 id="title">OSM Routing</h1>
 
-  <form>
-    <label for="vehicle">Vehicle: </label>
-    <select id="vehicle">
-      <option>Car</option>
-      <option>Pedestrian</option>
-    </select>
-    <br />
-    <label for="mode">Mode: </label>
-    <select id="mode">
-      <option>Fastest</option>
-      <option>Shortest</option>
-    </select>
-  </form>
+  <div id="error">
+    <!-- will be filled by jquery -->
+  </div>
 
-  <div id="map"></div>
+  <div id="wrapper">
+    <div id="navigation">
+      <div class="tabs">
+        <button value="routing">Routing Options</button>
+        <button value="gasstations" class="active">Gas Stations</button>
+      </div>
+      <div id="routing" class="navPart">
+        <p>Setup your routing options. Then just click two times on the map and a route gets calculated.</p>
+        <form>
+          <div class="form-group">
+            <label for="vehicle">Vehicle: </label>
+            <select id="vehicle">
+              <option>Car</option>
+              <option>Pedestrian</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="mode">Mode: </label>
+            <select id="mode">
+              <option>Fastest</option>
+              <option>Shortest</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div id="gasstations" class="navPart">
+        <p>Find gas stations around you. Just click once in the map, select a maximum distance and click 'Search'.</p>
+        <form>
+          <div class="form-group">
+            <label for="maxDistance">Max. Distance (km):</label>
+            <select id="maxDistance">
+              <option>5</option>
+              <option>10</option>
+              <option>20</option>
+              <option>50</option>
+            </select>
+          </div>
+          <button type="button" name="search">Search!</button>
+        </form>
+      </div>
+    </div>
+    <div id="mapContainer">
+      <div id="map">
+        <!-- will be filled by leaflet -->
+      </div>
+    </div>
+  </div>
 
 
   <script type="text/javascript" src="js/index.js"></script>

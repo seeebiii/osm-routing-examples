@@ -1,3 +1,88 @@
+html {
+  background-color: #fff;
+  color: #333;
+  font-family: 'Roboto', sans-serif;
+}
+
+#title {
+  border-bottom: 5px solid #333333;
+}
+
+#error {
+  width: 99%;
+  border-radius: 5px;
+  background: #ffaaaa;
+  height: 35px;
+  padding: 10px;
+  display: none;
+  margin: 20px 0px;
+}
+
+#wrapper {
+  width: 100%;
+}
+
+#navigation {
+  width: 20%;
+  float: left;
+}
+
+#routing {
+  display: none;
+}
+
+#mapContainer {
+  width: 100%;
+}
+
 #map {
   height: 500px;
+}
+
+button {
+  display: inline-block;
+  border: 1px solid #00B796;
+  background: #00B796;
+  box-shadow:none;
+  border-radius: 0px;
+  color: #fff;
+  letter-spacing: 1px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 10px;
+  width: 49%;
+}
+
+button:focus {
+  outline: none
+}
+
+button:hover {
+  border: 1px solid #333333;
+}
+
+.tabs button.active {
+  border: 1px solid #333333;
+}
+
+.form-group {
+  margin: 20px 0px;
+}
+
+.form-group select {
+  border: 1px solid #333;
+  background: #00B796;
+  color: #fff;
+  text-transform: uppercase;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 3px;
+  float: right;
+  width: 50%;
+}
+
+.navPart {
+  padding: 10px;
 }
