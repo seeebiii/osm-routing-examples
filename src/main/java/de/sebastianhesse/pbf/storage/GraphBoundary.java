@@ -25,20 +25,22 @@ public class GraphBoundary {
 
 
     public void updateCorners(Node node) {
-        if (upperLat < node.getLat()) {
-            upperLat = node.getLat();
-        }
+        if (node != null) {
+            if (upperLat < node.getLat()) {
+                upperLat = node.getLat();
+            }
 
-        if (upperLon < node.getLon()) {
-            upperLon = node.getLon();
-        }
+            if (upperLon < node.getLon()) {
+                upperLon = node.getLon();
+            }
 
-        if (lowerLat > node.getLat()) {
-            lowerLat = node.getLat();
-        }
+            if (lowerLat > node.getLat()) {
+                lowerLat = node.getLat();
+            }
 
-        if (lowerLon > node.getLon()) {
-            lowerLon = node.getLon();
+            if (lowerLon > node.getLon()) {
+                lowerLon = node.getLon();
+            }
         }
     }
 

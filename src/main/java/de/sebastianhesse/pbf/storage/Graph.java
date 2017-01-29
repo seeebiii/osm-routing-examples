@@ -120,6 +120,10 @@ public class Graph {
 
         for (int i = 1; i < this.nodes.length; i++) {
             Node node = this.nodes[i];
+            if (node == null) {
+                continue;
+            }
+
             this.graphBoundary.updateCorners(node);
             boolean updatedLatOrLong = false;
 
