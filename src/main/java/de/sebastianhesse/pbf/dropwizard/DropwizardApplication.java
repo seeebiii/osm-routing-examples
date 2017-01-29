@@ -4,6 +4,7 @@ import de.sebastianhesse.pbf.dropwizard.healtchecks.GraphHealthCheck;
 import de.sebastianhesse.pbf.dropwizard.healtchecks.StrategyHealthCheck;
 import de.sebastianhesse.pbf.dropwizard.resources.HelloWorldResource;
 import de.sebastianhesse.pbf.dropwizard.resources.GasStationResource;
+import de.sebastianhesse.pbf.dropwizard.resources.MetaResource;
 import de.sebastianhesse.pbf.dropwizard.resources.RoutingResource;
 import de.sebastianhesse.pbf.reader.NodeEdgeReader;
 import de.sebastianhesse.pbf.reader.OptimizedNodeEdgeReader;
@@ -83,6 +84,9 @@ public class DropwizardApplication extends Application<DropwizardConfiguration> 
 
         final GasStationResource gasStationResource = new GasStationResource(graph);
         environment.jersey().register(gasStationResource);
+
+        final MetaResource metaResource = new MetaResource(configuration, osmFile, graph);
+        environment.jersey().register(metaResource);
 
         // health checks
         environment.healthChecks().register("GraphHealthCheck", new GraphHealthCheck(graph));

@@ -39,6 +39,11 @@ html {
   height: 500px;
 }
 
+#footer {
+  font-size: 12px;
+  margin-top: 15px;
+}
+
 button {
   display: inline-block;
   border: 1px solid #00B796;

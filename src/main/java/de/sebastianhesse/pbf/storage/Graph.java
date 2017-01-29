@@ -222,6 +222,11 @@ public class Graph {
     }
 
 
+    public int getNodesSize() {
+        return this.nodes.length;
+    }
+
+
     public int getEdgesSize() {
         return this.edgeIdx;
     }

@@ -202,4 +202,19 @@ $(document).ready(function () {
 
     markers.push(marker.addTo(map));
   }
+
+  function getMetaData() {
+    $.ajax({
+      url: '/api/meta',
+      type: 'GET'
+    }).done(function (result) {
+      var footerText = 'Server started with data from file <i>' + result.osmFile + '</i>.';
+      footerText += ' Nodes: ' + result.nodes + ', Edges: ' + result.edges;
+      $('#footer').html(footerText);
+    }).fail(function (error) {
+      console.log('error occurred while retrsieving meta data from server.', error);
+    });
+  }
+
+  getMetaData();
 });
