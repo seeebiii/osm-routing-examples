@@ -10,23 +10,30 @@ Sebastian Hesse
 
 Here are some example classes for different use cases.
 
-#### Note
+**Note:**
 I prefer to use the word _node_ instead of _vertex_ in terms of graphs. So don't be irritated.
+
+**Download OSM files:**
+You can download OSM files for Germany (and other areas as well) on [this website](http://download.geofabrik.de/).
+
 
 ### PBF-Reader
 Example to show how to read nodes and ways of an OSM PBF file.
+Uses [Graphhopper](https://github.com/graphhopper/graphhopper) to read an OSM PBF file.
 See [PbfReader](/src/main/java/de/sebastianhesse/pbf/reader/PbfReader.java)
 
 ### NodeEdgeReader
 Example to show how to simply read nodes and ways into a graph of nodes and edges.
+Uses [Graphhopper](https://github.com/graphhopper/graphhopper) to read an OSM PBF file.
 See [NodeEdgeReader](/src/main/java/de/sebastianhesse/pbf/reader/SimpleNodeEdgeReader.java)
 
 ### OsmMapViewer
 Example to show how to connect OSM data with a Swing application and also be able to route between two points.
+Uses [JMapViewer](http://wiki.openstreetmap.org/wiki/JMapViewer) to start a Swing application and show a map.
 See [OsmMapViewer](/src/main/java/de/sebastianhesse/pbf/viewer/OsmMapViewer.java)
 
 ### Dropwizard Server
-A Dropwizard application setting up a routing API accessible via REST.
+A [Dropwizard](http://www.dropwizard.io/) application setting up a routing API accessible via REST.
 See [DropwizardPackage](/src/main/java/de/sebastianhesse/pbf/dropwizard)
 
 In order to start the server:
@@ -52,6 +59,12 @@ GET /api/route?lat1=...&lon1=...&lat2=...&lon2=...&vehicle=car&mode=fastest
 maxDistance: maximum distance to search for gas stations around the position
 GET /api/gasstations?lat=...&lon=...&maxDistance=20
 ```
+
+## Development
+1. Check out the repository: ``git clone https://github.com/seeebiii/osm-routing-examples``
+2. Start the backend server: ``java -jar target/osm-routing-examples.jar server /path/to/config.yml /path/to/osm/file``
+3. Run [Gulp](http://gulpjs.com/): ``gulp watch``
+4. Start coding!
 
 ## License
 MIT License
