@@ -34,12 +34,14 @@ See [OsmMapViewer](/src/main/java/de/sebastianhesse/pbf/viewer/OsmMapViewer.java
 
 ### Dropwizard Server
 A [Dropwizard](http://www.dropwizard.io/) application setting up a routing API accessible via REST.
-See [DropwizardPackage](/src/main/java/de/sebastianhesse/pbf/dropwizard)
+See [this package](/src/main/java/de/sebastianhesse/pbf/dropwizard)
 
-In order to start the server:
+In order to start the server, just hand over a configuration file and an OSM file.
+The *.yml and *.osm.pbf file must be somewhere on the local system.
+Take a look at the [example *.yml file](/src/main/resources/dropwizard.yml).
 ```
 $ mvn clean package
-$ java -jar target/osm-routing-examples.jar server /path/to/config.yml /path/to/osm/file
+$ java -jar target/osm-routing-examples-1.1.0.jar server /path/to/config.yml /path/to/osm/file
 ```
 
 A web frontend will be served from:
@@ -47,7 +49,8 @@ A web frontend will be served from:
 http://localhost:8080/index.html
 ```
 
-Access the REST API with:
+
+##### REST API
 ```
 ### Get a path between two points (lat1,lon1) and (lat2,lon2) ###
 vehicle: car, pedestrian
@@ -58,13 +61,21 @@ GET /api/route?lat1=...&lon1=...&lat2=...&lon2=...&vehicle=car&mode=fastest
 ### Get all gas stations around a given position ###
 maxDistance: maximum distance to search for gas stations around the position
 GET /api/gasstations?lat=...&lon=...&maxDistance=20
+
+### Get meta information about the OSM backend ###
+GET /api/meta
 ```
 
 ## Development
 1. Check out the repository: ``git clone https://github.com/seeebiii/osm-routing-examples``
-2. Start the backend server: ``java -jar target/osm-routing-examples.jar server /path/to/config.yml /path/to/osm/file``
+2. Start the backend server: ``java -jar target/osm-routing-examples-1.1.0.jar server /path/to/config.yml /path/to/osm/file``
 3. Run [Gulp](http://gulpjs.com/): ``gulp watch``
 4. Start coding!
+
+## TODO
+- Add route information like estimated distance and duration
+- Show gas station info popup with name, address, etc.
+- Implement localization
 
 ## License
 MIT License
