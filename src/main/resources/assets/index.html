@@ -23,27 +23,8 @@
   <div id="wrapper">
     <div id="navigation">
       <div class="tabs">
-        <button value="routing">Routing Options</button>
         <button value="gasstations" class="active">Gas Stations</button>
-      </div>
-      <div id="routing" class="navPart">
-        <p>Setup your routing options. Then just click two times on the map and a route gets calculated.</p>
-        <form>
-          <div class="form-group">
-            <label for="vehicle">Vehicle: </label>
-            <select id="vehicle">
-              <option>Car</option>
-              <option>Pedestrian</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="mode">Mode: </label>
-            <select id="mode">
-              <option>Fastest</option>
-              <option>Shortest</option>
-            </select>
-          </div>
-        </form>
+        <button value="routing">Routing Options</button>
       </div>
       <div id="gasstations" class="navPart">
         <p>Find gas stations around you.</p>
@@ -64,6 +45,25 @@
             </select>
           </div>
           <button type="button" name="search">Search!</button>
+        </form>
+      </div>
+      <div id="routing" class="navPart">
+        <p>Setup your routing options. Then just click two times on the map and a route gets calculated.</p>
+        <form>
+          <div class="form-group">
+            <label for="vehicle">Vehicle: </label>
+            <select id="vehicle">
+              <option>Car</option>
+              <option>Pedestrian</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="mode">Mode: </label>
+            <select id="mode">
+              <option>Fastest</option>
+              <option>Shortest</option>
+            </select>
+          </div>
         </form>
       </div>
     </div>
