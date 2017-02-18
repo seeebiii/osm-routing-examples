@@ -70,6 +70,13 @@ $(document).ready(function () {
     getGasStations();
   });
 
+  $('button[name="route_clear"]').on('click', function () {
+    resetMap();
+    $('#error').hide();
+    $('#route_from').val('');
+    $('#route_to').val('');
+  });
+
   // helper functions
   function getGasStations() {
     removePolyline();
@@ -112,6 +119,8 @@ $(document).ready(function () {
 
   function sendRequest(startPoint, endPoint) {
     $('#error').hide();
+    $('#route_from').val(pointToString(startPoint));
+    $('#route_to').val(pointToString(endPoint));
     var url = getRequestUrl(startPoint, endPoint);
     console.log('Sending request to: ', url);
     $.ajax({
@@ -201,6 +210,14 @@ $(document).ready(function () {
     }
 
     markers.push(marker.addTo(map));
+  }
+
+  function pointToString(point) {
+    if (!!point && point.length == 2) {
+      return point[0] + ', ' + point[1];
+    } else {
+      return 'Missing point data.';
+    }
   }
 
   function getMetaData() {

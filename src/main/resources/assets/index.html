@@ -24,7 +24,7 @@
     <div id="navigation">
       <div class="tabs">
         <button value="gasstations" class="active">Gas Stations</button>
-        <button value="routing">Routing Options</button>
+        <button value="routing">Route</button>
       </div>
       <div id="gasstations" class="navPart">
         <p>Find gas stations around you.</p>
@@ -32,7 +32,7 @@
           <li>Click into the map.</li>
           <li>Select a maximum distance.</li>
           <li>Click 'Search'.</li>
-          <li>Select a gas station by clicking on it.</li>
+          <li>Route to a gas station by clicking on it.</li>
         </ol>
         <form>
           <div class="form-group">
@@ -44,11 +44,28 @@
               <option>50</option>
             </select>
           </div>
-          <button type="button" name="search">Search!</button>
+          <button type="button" name="search">Search</button>
+          <button type="button" name="route_clear">Clear</button>
         </form>
       </div>
       <div id="routing" class="navPart">
-        <p>Setup your routing options. Then just click two times on the map and a route gets calculated.</p>
+        <p>Create a route by clicking two times into the map.</p>
+        <form id="route">
+          <div class="form-group">
+            <label for="route_from">From</label>
+            <input type="text" id="route_from" disabled />
+          </div>
+          <div class="form-group">
+            <label for="route_to">To</label>
+            <input type="text" id="route_to" disabled />
+          </div>
+          <button type="button" name="route_clear">Clear</button>
+        </form>
+      </div>
+      <hr/>
+      <div id="options">
+        <h2>Options</h2>
+        <p>Setup your routing options.</p>
         <form>
           <div class="form-group">
             <label for="vehicle">Vehicle: </label>

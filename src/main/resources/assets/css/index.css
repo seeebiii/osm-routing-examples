@@ -29,6 +29,7 @@ html {
 
 #routing {
   display: none;
+  margin-bottom: 50px;
 }
 
 #mapContainer {
@@ -57,6 +58,7 @@ button {
   text-transform: uppercase;
   padding: 10px;
   width: 49%;
+  cursor: pointer;
 }
 
 button:focus {
@@ -67,6 +69,17 @@ button:hover {
   border: 1px solid #333333;
 }
 
+form > button, form > button:hover {
+  background: #007dd1;
+  border: none;
+}
+
+button[name="route_clear"] {
+  float: right;
+  background: #3498DB !important;
+  /*opacity: 0.5;*/
+}
+
 .tabs button.active {
   border: 1px solid #333333;
 }
@@ -75,7 +88,7 @@ button:hover {
   margin: 20px 0px;
 }
 
-.form-group select {
+.form-group select, .form-group input {
   border: 1px solid #333;
   background: #00B796;
   color: #fff;
@@ -86,6 +99,11 @@ button:hover {
   padding: 3px;
   float: right;
   width: 50%;
+}
+
+.form-group *:disabled {
+  background: #00B796;
+  opacity: 0.5;
 }
 
 .navPart {
