@@ -68,7 +68,7 @@ GET /api/meta
 
 ## Development
 1. Check out the repository: ``git clone https://github.com/seeebiii/osm-routing-examples``
-2. Start the backend server: ``java -jar target/osm-routing-examples-1.1.0.jar server /path/to/config.yml /path/to/osm/file``
+2. Run ```main``` method from ```DropwizardApplication.java``` with the arguments: ``server /path/to/config.yml /path/to/osm/file``
 3. Run [Gulp](http://gulpjs.com/): ``gulp watch``
 4. Start coding!
 
