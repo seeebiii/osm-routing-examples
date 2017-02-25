@@ -11,6 +11,7 @@ import de.sebastianhesse.pbf.storage.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -55,14 +56,19 @@ public class RoutingResource {
     @GET
     @Timed
     public Response getRouteForPoints(@QueryParam("lat1") double lat1, @QueryParam("lon1") double lon1,
+                                      @QueryParam("pid1") @DefaultValue("-1") String pid1,
                                       @QueryParam("lat2") double lat2, @QueryParam("lon2") double lon2,
+                                      @QueryParam("pid2") @DefaultValue("-1") String pid2,
                                       @QueryParam("vehicle") String vehicle, @QueryParam("mode") String mode) {
         Accessor accessor = Accessor.valueOf(vehicle.toUpperCase());
         CalculationType calculationType = CalculationType.valueOf(mode.toUpperCase());
         DijkstraOptions dijkstraOptions = new DijkstraOptions(accessor, calculationType);
 
-        Optional<Node> startNodeOptional = graph.findClosestNode(lat1, lon1);
-        Optional<Node> endNodeOptional = graph.findClosestNode(lat2, lon2);
+        int node1Id = getIdAsInt(pid1);
+        int node2Id = getIdAsInt(pid2);
+
+        Optional<Node> startNodeOptional = graph.findClosestNode(node1Id, lat1, lon1);
+        Optional<Node> endNodeOptional = graph.findClosestNode(node2Id, lat2, lon2);
 
         if (startNodeOptional.isPresent() && endNodeOptional.isPresent()) {
             Node startNode = startNodeOptional.get();
@@ -72,6 +78,20 @@ public class RoutingResource {
             return Response.status(Response.Status.CONFLICT)
                     .entity("Can not locate start or end node with given values.")
                     .build();
+        }
+    }
+
+
+    private int getIdAsInt(String pid) {
+        try {
+            return Integer.valueOf(pid);
+        } catch (NumberFormatException e) {
+            // if it's not an int, try as double
+            try {
+                return Double.valueOf(pid).intValue();
+            } catch (NumberFormatException e1) {
+                return -1;
+            }
         }
     }
 

@@ -16,8 +16,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -34,6 +37,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
     protected ReaderWayValidator validator = new ReaderWayValidator();
     protected Graph graph;
     protected File osmFile = null;
+    protected Map<String, Set<String>> poiTypes;
 
 
     public AbstractNodeEdgeReader(String osmFile) {
@@ -59,6 +63,8 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
      */
     public NodeEdgeReader importData() throws Exception {
         if (this.osmFile != null && this.osmFile.exists()) {
+            logger.info("--------------------------- PREPARE IMPORT -------------");
+            prepareImport();
             logger.info("--------------------------- START TO IMPORT DATA -------------");
             long start = System.currentTimeMillis();
 
@@ -70,8 +76,8 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
             readNodesOfWays();
             logger.info("--------------------------- SORT NODES -----------------------");
             sortNodes();
-            logger.info("--------------------------- READ GAS STATIONS ----------------");
-            readGasStations();
+            logger.info("--------------------------- READ POIS ----------------");
+            readPois();
             logger.info("--------------------------- READ EDGES -----------------------");
             readEdgesOfWays();
             logger.info("--------------------------- SORT GRAPH -----------------------");
@@ -86,6 +92,14 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
         }
 
         return this;
+    }
+
+
+    private void prepareImport() {
+        // load POI type file from classpath
+        InputStream inputStream = this.getClass().getResourceAsStream("/poi_nominatim.txt");
+        NominatimSpecialPhrasesConverter converter = new NominatimSpecialPhrasesConverter(inputStream);
+        this.poiTypes = converter.convertFromStream();
     }
 
 
@@ -157,26 +171,33 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
     }
 
 
-    protected void readGasStations() throws Exception {
-        processFile("gas stations", item -> {
+    protected void readPois() throws Exception {
+        processFile("pois", item -> {
             switch (item.getType()) {
                 case ReaderElement.NODE:
                     ReaderNode readerNode = (ReaderNode) item;
-                    if (readerNode.hasTag("amenity", "fuel")) {
-                        Node node = new Node(readerNode.getLat(), readerNode.getLon());
-                        node.setGasStation(true);
-                        if (this.osmIdMapping.containsKey(readerNode.getId())) {
-                            this.graph.addGasStation(node, this.osmIdMapping.get(readerNode.getId()));
-                        } else {
-                            this.graph.addGasStation(node);
-                        }
+                    Set<String> keys = this.poiTypes.keySet();
+                    for (String key : keys) {
+                        if (readerNode.hasTag(key, this.poiTypes.get(key))) {
+                            Node node = new Node(readerNode.getLat(), readerNode.getLon());
+                            node.setGasStation(true);
+                            node.setType(key, readerNode.getTag(key));
+                            if (this.osmIdMapping.containsKey(readerNode.getId())) {
+                                node.setId(this.osmIdMapping.get(readerNode.getId()));
+                                this.graph.addPoi(node, node.getId());
+                            } else {
+                                this.graph.addPoi(node);
+                            }
 
-                        return true;
+                            return true;
+                        }
                     }
             }
 
             return false;
         });
+
+        this.graph.setPoiTypes(this.poiTypes);
     }
 
 

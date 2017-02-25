@@ -5,6 +5,7 @@ import de.sebastianhesse.pbf.util.GraphUtil;
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import gnu.trove.set.TLongSet;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -28,13 +30,14 @@ public class Graph {
 
     private Node[] nodes = null;
     private Edge[] edges = null;
-    private TObjectLongMap<Node> gasStations = new TObjectLongHashMap<>();
+    private TObjectLongMap<Node> pois = new TObjectLongHashMap<>();
 
     private int nodeIdx = 0;
     private int edgeIdx = 0;
 
     private Map<String, GridOffset> gridOffsets;
     private GraphBoundary graphBoundary;
+    private Map<String, Set<String>> poiTypes;
 
 
     public Graph(int nodes, int edges) {
@@ -42,6 +45,7 @@ public class Graph {
         this.edges = new Edge[edges];
         this.gridOffsets = new HashMap<>();
         this.graphBoundary = new GraphBoundary();
+        this.poiTypes = new HashMap<>();
     }
 
 
@@ -262,6 +266,15 @@ public class Graph {
     }
 
 
+    public Optional<Node> findClosestNode(int id, double lat, double lon) {
+        if (id > -1 && id < this.nodes.length) {
+            return Optional.ofNullable(this.nodes[id]);
+        } else {
+            return findClosestNode(lat, lon);
+        }
+    }
+
+
     public Optional<Node> findClosestNode(double lat, double lon) {
         try {
             GridOffset offset = getGridCellOffset(lat, lon);
@@ -292,20 +305,31 @@ public class Graph {
     }
 
 
-    public void addGasStation(Node node, long idx) {
-        this.gasStations.put(node, idx);
+    public void addPoi(Node node, long idx) {
+        this.pois.put(node, idx);
     }
 
 
-    public void addGasStation(Node node) {
-        this.addGasStation(node, -1);
+    public void addPoi(Node node) {
+        this.addPoi(node, -1);
     }
 
 
-    public List<Node> getGasStationsAround(Node source, short maxDistance) {
-        return this.gasStations.keySet().stream()
-                .filter(node -> GraphUtil.getDistance(source, node) <= maxDistance * 1000)
+    public List<Node> getPoisAround(Node source, short maxDistance, Pair<String, String> type) {
+        return this.pois.keySet().parallelStream()
+                .filter(node -> GraphUtil.getDistance(source, node) <= maxDistance * 1000 &&
+                        node.isTypeOf(type.getKey(), type.getValue()))
                 .collect(Collectors.toList());
+    }
+
+
+    public void setPoiTypes(Map<String, Set<String>> poiTypes) {
+        this.poiTypes = poiTypes;
+    }
+
+
+    public Map<String, Set<String>> getPoiTypes() {
+        return poiTypes;
     }
 
 

@@ -2,7 +2,7 @@ $(document).ready(function () {
   var points = [];
   var markers = [];
   var polyline = null;
-  var showGasStations = true; // default status for navigation
+  var showPois = true; // default status for navigation
   var map = L.map('map').setView([48.75969691865349, 9.181823730468752], 10);
   var greenIcon = new L.Icon({
     iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
@@ -21,19 +21,19 @@ $(document).ready(function () {
 
   $('.tabs button').on('click', function () {
     var buttonValue = $(this).val();
-    var otherValue = (buttonValue == 'gasstations') ? 'routing' : 'gasstations';
+    var otherValue = (buttonValue == 'pois') ? 'routing' : 'pois';
 
     $('.tabs button[value="' + buttonValue + '"]').addClass('active');
     $('.tabs button[value="' + otherValue + '"]').removeClass('active');
     $('#' + buttonValue).show();
     $('#' + otherValue).hide();
 
-    showGasStations = buttonValue == 'gasstations';
+    showPois = buttonValue == 'pois';
   });
 
   // register click and change handler
   map.on('click', function (e) {
-    if ((showGasStations && points.length >= 1) || (!showGasStations && points.length >= 2)) {
+    if ((showPois && points.length >= 1) || (!showPois && points.length >= 2)) {
       resetMap();
     }
 
@@ -45,7 +45,7 @@ $(document).ready(function () {
   });
 
   $('#vehicle, #mode').on('change', function () {
-    if (showGasStations) {
+    if (showPois) {
       return;
     }
 
@@ -58,7 +58,7 @@ $(document).ready(function () {
 
   $('button[name="search"]').on('click', function () {
     $('#error').hide();
-    if (!showGasStations) {
+    if (!showPois) {
       return;
     }
 
@@ -67,7 +67,7 @@ $(document).ready(function () {
       return;
     }
 
-    getGasStations();
+    getPois();
   });
 
   $('button[name="route_clear"]').on('click', function () {
@@ -78,28 +78,34 @@ $(document).ready(function () {
   });
 
   // helper functions
-  function getGasStations() {
+  function getPois() {
     removePolyline();
     removePointsExceptFirst();
     removeMarkersExceptFirst();
     var distance = $('#maxDistance').val();
 
-    sendRequestToGasStations(points[0][0], points[0][1], distance);
+    sendRequestToPois(points[0][0], points[0][1], distance);
   }
 
-  function sendRequestToGasStations(lat, lon, distance) {
+  function sendRequestToPois(lat, lon, distance) {
     $('#error').hide();
-    var url = '/api/gasstations?lat=' + lat + '&lon=' + lon + '&maxDistance=' + distance;
+    var url = '/api/pois?lat=' + lat + '&lon=' + lon + '&maxDistance=' + distance;
+    url += '&typeKey=' + $('#typeKey').val();
+    url += '&typeValue=' + $('#typeValue').val();
     console.log('Sending request to: ', url);
     $.ajax({
       url: url,
       type: 'GET'
     }).done(function (success) {
-      if (success && success.points && success.points.length) {
-        for (var i = 0; i < success.points.length; i++) {
-          addPointToMap(success.points[i], {clickHandler: routeToGasStation});
+      if (success && success.points) {
+        if (success.points.length == 0) {
+          $('#error').html('Could not find any POIs nearby. Please increase the distance or choose another POI type.').show();
+        } else {
+          for (var i = 0; i < success.points.length; i++) {
+            addPointToMap(success.points[i], {clickHandler: routeToPoi});
+          }
+          map.fitBounds(points);
         }
-        map.fitBounds(points);
       }
     }).fail(function (error) {
       $('#error').html('Something went wrong. Error message: ' + error.responseText).show();
@@ -107,14 +113,17 @@ $(document).ready(function () {
     });
   }
 
-  function routeToGasStation(e) {
+  function routeToPoi(e) {
     var startPoint = points[0];
-    var endPoint = e.latlng;
+    var filtered = points.filter(function (value) {
+      return value[0] == e.latlng.lat && value[1] == e.latlng.lng;
+    });
+    var endPoint = filtered[0];
     removePolyline();
     removeMarkersExceptFirst();
     removePointsExceptFirst();
     addPointToMap(endPoint);
-    sendRequest(startPoint, points[1]);
+    sendRequest(startPoint, endPoint);
   }
 
   function sendRequest(startPoint, endPoint) {
@@ -137,6 +146,12 @@ $(document).ready(function () {
 
   function getRequestUrl(startPoint, endPoint) {
     var params = '?lat1=' + startPoint[0] + '&lon1=' + startPoint[1] + '&lat2=' + endPoint[0] + '&lon2=' + endPoint[1];
+    if (startPoint.length == 3) {
+      params += '&pid1=' + startPoint[2];
+    }
+    if (endPoint.length == 3) {
+      params += '&pid2=' + endPoint[2];
+    }
     var vehicle = $('#vehicle').val();
     params += '&vehicle=' + vehicle;
     var mode = $('#mode').val();
@@ -220,6 +235,36 @@ $(document).ready(function () {
     }
   }
 
+  function getPoiOptions() {
+    $.ajax({
+      url: '/api/pois',
+      type: 'OPTIONS'
+    }).done(function (result) {
+      // add keys to select
+      var keys = Object.keys(result);
+      var typeKey = $('#typeKey');
+      keys.sort().forEach(function (value) {
+        typeKey.append('<option>' + value + '</option>')
+      });
+
+      // add click handler to change values appropriately
+      typeKey.on('click', function (e) {
+        var key = $(this).val();
+        var values = result[key];
+        var typeValue = $('#typeValue');
+        typeValue.empty();
+        values.sort().forEach(function (value) {
+          typeValue.append('<option>' + value + '</option>');
+        });
+      });
+
+      // trigger a click to add initial values
+      typeKey.trigger('click');
+    }).fail(function (error) {
+      console.log('error occurred while retrieving POI types from server.', error);
+    });
+  }
+
   function getMetaData() {
     $.ajax({
       url: '/api/meta',
@@ -229,9 +274,10 @@ $(document).ready(function () {
       footerText += ' Nodes: ' + result.nodes + ', Edges: ' + result.edges;
       $('#footer').html(footerText);
     }).fail(function (error) {
-      console.log('error occurred while retrsieving meta data from server.', error);
+      console.log('error occurred while retrieving meta data from server.', error);
     });
   }
 
   getMetaData();
+  getPoiOptions();
 });

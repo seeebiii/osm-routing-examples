@@ -3,7 +3,7 @@ package de.sebastianhesse.pbf.dropwizard;
 import de.sebastianhesse.pbf.dropwizard.healtchecks.GraphHealthCheck;
 import de.sebastianhesse.pbf.dropwizard.healtchecks.StrategyHealthCheck;
 import de.sebastianhesse.pbf.dropwizard.resources.HelloWorldResource;
-import de.sebastianhesse.pbf.dropwizard.resources.GasStationResource;
+import de.sebastianhesse.pbf.dropwizard.resources.PoiResource;
 import de.sebastianhesse.pbf.dropwizard.resources.MetaResource;
 import de.sebastianhesse.pbf.dropwizard.resources.RoutingResource;
 import de.sebastianhesse.pbf.reader.NodeEdgeReader;
@@ -82,8 +82,8 @@ public class DropwizardApplication extends Application<DropwizardConfiguration> 
         final RoutingResource routingResource = new RoutingResource(graph);
         environment.jersey().register(routingResource);
 
-        final GasStationResource gasStationResource = new GasStationResource(graph);
-        environment.jersey().register(gasStationResource);
+        final PoiResource poiResource = new PoiResource(graph);
+        environment.jersey().register(poiResource);
 
         final MetaResource metaResource = new MetaResource(configuration, osmFile, graph);
         environment.jersey().register(metaResource);

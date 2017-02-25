@@ -1,5 +1,6 @@
 package de.sebastianhesse.pbf.storage;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -11,11 +12,13 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 public class Node implements Comparable<Node> {
 
-    private long id;
+    private long id = -1;
     private double lat;
     private double lon;
     private int offsetPointer = -1;
     private boolean isGasStation = false;
+    private String typeKey = "";
+    private String typeValue = "";
 
 
     public Node(double lat, double lon) {
@@ -61,6 +64,17 @@ public class Node implements Comparable<Node> {
 
     public void setGasStation(boolean gasStation) {
         isGasStation = gasStation;
+    }
+
+
+    public void setType(String key, String value) {
+        this.typeKey = key;
+        this.typeValue = value;
+    }
+
+
+    public boolean isTypeOf(String key, String value) {
+        return StringUtils.equalsIgnoreCase(this.typeKey, key) && StringUtils.equalsIgnoreCase(this.typeValue, value);
     }
 
 

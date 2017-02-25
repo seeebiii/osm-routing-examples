@@ -23,18 +23,27 @@
   <div id="wrapper">
     <div id="navigation">
       <div class="tabs">
-        <button value="gasstations" class="active">Gas Stations</button>
+        <button value="pois" class="active">POIs</button>
         <button value="routing">Route</button>
       </div>
-      <div id="gasstations" class="navPart">
-        <p>Find gas stations around you.</p>
+      <div id="pois" class="navPart">
+        <p>Find POIs around you.</p>
         <ol>
           <li>Click into the map.</li>
+          <li>Select a POI type (by selecting a key and value).</li>
           <li>Select a maximum distance.</li>
           <li>Click 'Search'.</li>
           <li>Route to a gas station by clicking on it.</li>
         </ol>
         <form>
+          <div class="form-group">
+            <label for="typeKey">Type Key:</label>
+            <select id="typeKey"></select>
+          </div>
+          <div class="form-group">
+            <label for="typeValue">Type Value:</label>
+            <select id="typeValue"></select>
+          </div>
           <div class="form-group">
             <label for="maxDistance">Max. Distance (km):</label>
             <select id="maxDistance">

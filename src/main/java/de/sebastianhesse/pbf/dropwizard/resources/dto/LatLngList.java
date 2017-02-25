@@ -17,7 +17,7 @@ public class LatLngList {
 
     public LatLngList(List<Node> nodes) {
         this.points = nodes.stream()
-                .map(node -> new Double[] {node.getLat(), node.getLon()})
+                .map(node -> new Double[] {node.getLat(), node.getLon(), Long.valueOf(node.getId()).doubleValue()})
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 }
