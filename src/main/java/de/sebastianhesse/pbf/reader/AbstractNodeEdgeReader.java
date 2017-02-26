@@ -197,8 +197,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
                             node.setPoi(true);
                             node.setType(key, readerNode.getTag(key));
                             if (this.osmIdMapping.containsKey(readerNode.getId())) {
-                                node.setId(this.osmIdMapping.get(readerNode.getId()));
-                                this.graph.addPoi(node, node.getId());
+                                this.graph.addPoi(node, this.osmIdMapping.get(readerNode.getId()));
                             } else {
                                 this.graph.addPoi(node);
                             }

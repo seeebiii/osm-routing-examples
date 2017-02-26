@@ -78,6 +78,16 @@ public class Node implements Comparable<Node> {
     }
 
 
+    public String getTypeKey() {
+        return typeKey;
+    }
+
+
+    public String getTypeValue() {
+        return typeValue;
+    }
+
+
     @Override
     public int compareTo(Node o) {
         if (o == null) {

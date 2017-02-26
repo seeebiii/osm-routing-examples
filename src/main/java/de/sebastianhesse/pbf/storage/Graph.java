@@ -201,7 +201,8 @@ public class Graph {
         boolean foundOffset = false;
         for (int i = 0; i < this.nodeIdx; i++) {
             Node node = this.nodes[i];
-            node.setId(i);
+            updateNodeId(i, node);
+
             for (; j < this.edgeIdx; j++) {
                 Edge edge = this.edges[j];
                 if (!foundOffset && edge.getSourceNode() == i) {
@@ -213,6 +214,17 @@ public class Graph {
                     break;
                 }
             }
+        }
+    }
+
+
+    private void updateNodeId(int i, Node node) {
+        // check if node is a POI and then also update the POI data; otherwise just update the id
+        if (node.isPoi() && this.pois.containsKey(node)) {
+            node.setId(i);
+            this.pois.put(node, node.getId());
+        } else {
+            node.setId(i);
         }
     }
 
@@ -310,6 +322,8 @@ public class Graph {
         if (idx > -1 && idx < this.nodes.length) {
             int i = Long.valueOf(idx).intValue();
             Node existingNode = this.nodes[i];
+            existingNode.setPoi(true);
+            existingNode.setType(node.getTypeKey(), node.getTypeValue());
             this.pois.put(existingNode, idx);
         } else {
             this.pois.put(node, idx);

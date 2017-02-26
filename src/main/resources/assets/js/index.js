@@ -83,13 +83,15 @@ $(document).ready(function () {
     removePointsExceptFirst();
     removeMarkersExceptFirst();
     var distance = $('#maxDistance').val();
-
-    sendRequestToPois(points[0][0], points[0][1], distance);
+    sendRequestToPois(points[0], distance);
   }
 
-  function sendRequestToPois(lat, lon, distance) {
+  function sendRequestToPois(startPoint, distance) {
     $('#error').hide();
-    var url = '/api/pois?lat=' + lat + '&lon=' + lon + '&maxDistance=' + distance;
+    var url = '/api/pois?lat=' + startPoint[0] + '&lon=' + startPoint[1] + '&maxDistance=' + distance;
+    if (startPoint.length > 2) {
+      url += '&pid=' + startPoint[2];
+    }
     url += '&typeKey=' + $('#typeKey').val();
     url += '&typeValue=' + $('#typeValue').val();
     console.log('Sending request to: ', url);
@@ -97,12 +99,15 @@ $(document).ready(function () {
       url: url,
       type: 'GET'
     }).done(function (success) {
-      if (success && success.points) {
-        if (success.points.length == 0) {
+      if (success && success.poiList.points) {
+        if (success.poiList.points.length == 0) {
           $('#error').html('Could not find any POIs nearby. Please increase the distance or choose another POI type.').show();
         } else {
-          for (var i = 0; i < success.points.length; i++) {
-            addPointToMap(success.points[i], {clickHandler: routeToPoi});
+          removePoints();
+          removeMarkers();
+          addPointToMap(success.startPoint, {icon: greenIcon});
+          for (var i = 0; i < success.poiList.points.length; i++) {
+            addPointToMap(success.poiList.points[i], {clickHandler: routeToPoi});
           }
           map.fitBounds(points);
         }
@@ -114,6 +119,10 @@ $(document).ready(function () {
   }
 
   function routeToPoi(e) {
+    // show routing tab
+    $('.tabs button[value="routing"]').trigger('click');
+
+    // do actual routing stuff
     var startPoint = points[0];
     var filtered = points.filter(function (value) {
       return value[0] == e.latlng.lat && value[1] == e.latlng.lng;
@@ -138,6 +147,8 @@ $(document).ready(function () {
     }).done(function (success) {
       polyline = L.polyline(success.points, {color: 'blue'}).addTo(map);
       map.fitBounds(polyline.getBounds());
+
+      $('#estimatedDistance').val(success.distance);
     }).fail(function (error) {
       $('#error').html('Something went wrong. Error message: ' + error.responseText).show();
       console.error('Error occurred while retrieving route between two points.', error);
@@ -146,10 +157,10 @@ $(document).ready(function () {
 
   function getRequestUrl(startPoint, endPoint) {
     var params = '?lat1=' + startPoint[0] + '&lon1=' + startPoint[1] + '&lat2=' + endPoint[0] + '&lon2=' + endPoint[1];
-    if (startPoint.length == 3) {
+    if (startPoint.length > 2) {
       params += '&pid1=' + startPoint[2];
     }
-    if (endPoint.length == 3) {
+    if (endPoint.length > 2) {
       params += '&pid2=' + endPoint[2];
     }
     var vehicle = $('#vehicle').val();
@@ -209,7 +220,7 @@ $(document).ready(function () {
     if (Array.isArray(point)) {
       points.push(point);
     } else {
-      points.push([point.lat, point.lng]);
+      points.push([point.lat, point.lng || point.lon, point.id || -1]);
     }
 
     var marker = null;
@@ -228,7 +239,7 @@ $(document).ready(function () {
   }
 
   function pointToString(point) {
-    if (!!point && point.length == 2) {
+    if (!!point && point.length >= 2) {
       return point[0] + ', ' + point[1];
     } else {
       return 'Missing point data.';
