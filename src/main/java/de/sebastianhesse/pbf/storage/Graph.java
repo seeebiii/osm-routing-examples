@@ -5,6 +5,7 @@ import de.sebastianhesse.pbf.util.GraphUtil;
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import gnu.trove.set.TLongSet;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -277,23 +278,22 @@ public class Graph {
 
     public Optional<Node> findClosestNode(double lat, double lon) {
         try {
+            Node searchNode = new Node(lat, lon);
             GridOffset offset = getGridCellOffset(lat, lon);
-            double latDiff = 1.0;
-            double lonDiff = 1.0;
+            GridOffset nextOffset = getGridCellOffset(offset.getNextOffset());
+            int upperOffsetLimit = nextOffset != null ? nextOffset.getOffset() : this.nodes.length;
+            double distance = Double.MAX_VALUE;
             Node selectedNode = null;
-            for (int i = offset.getOffset(); i < this.nodes.length; i++) {
+            for (int i = offset.getOffset(); i < upperOffsetLimit; i++) {
                 Node node = this.nodes[i];
                 if (node.getLat() == lat && node.getLon() == lon) {
                     return Optional.of(node);
                 }
 
-                // TODO: optimize
-                double tmpLatDiff = Math.abs(lat - node.getLat());
-                double tmpLonDiff = Math.abs(lon - node.getLon());
-                if (tmpLatDiff < latDiff && tmpLonDiff < lonDiff) {
+                double tmpDistance = Math.abs(GraphUtil.getDistance(searchNode, node));
+                if (tmpDistance < distance) {
                     selectedNode = node;
-                    latDiff = tmpLatDiff;
-                    lonDiff = tmpLonDiff;
+                    distance = tmpDistance;
                 }
             }
 
@@ -374,6 +374,14 @@ public class Graph {
         }
 
         throw new OutOfRangeException("The lat and lon you've provided is out of range.");
+    }
+
+
+    private GridOffset getGridCellOffset(String name) {
+        if (StringUtils.isBlank(name) || !this.gridOffsets.containsKey(name)) {
+            return null;
+        }
+        return this.gridOffsets.get(name);
     }
 
 
