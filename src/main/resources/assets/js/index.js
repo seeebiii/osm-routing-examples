@@ -267,7 +267,7 @@ $(document).ready(function () {
 
   function getMetaData() {
     $.ajax({
-      url: '/api/meta',
+      url: '/api/meta/system',
       type: 'GET'
     }).done(function (result) {
       var footerText = 'Server started with data from file <i>' + result.osmFile + '</i>.';

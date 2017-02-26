@@ -33,6 +33,7 @@ public class MetaResource {
 
 
     @GET
+    @Path("/system")
     public Response getMetaData() {
         String readerStrategy = this.configuration.getReaderStrategy().toString();
         return Response.ok(new MetaDto(osmFile, readerStrategy, graph.getEdgesSize(), graph.getNodesSize())).build();
@@ -42,5 +43,13 @@ public class MetaResource {
     private String getFileName(String osmFile) {
         int i = StringUtils.lastIndexOf(osmFile, File.separatorChar);
         return osmFile.substring(i + 1);
+    }
+
+
+    @GET
+    @Path("/graph")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response getGraphSampleData() {
+        return Response.ok(this.graph.toSampleString()).build();
     }
 }
