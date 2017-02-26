@@ -25,7 +25,6 @@ import java.util.Set;
 
 /**
  * Abstract class to read an OSM file into a {@link Graph} object which contains nodes and edges.
- *
  */
 public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
 
@@ -97,9 +96,18 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
 
     private void prepareImport() {
         // load POI type file from classpath
-        InputStream inputStream = this.getClass().getResourceAsStream("/poi_nominatim.txt");
-        NominatimSpecialPhrasesConverter converter = new NominatimSpecialPhrasesConverter(inputStream);
-        this.poiTypes = converter.convertFromStream();
+        InputStream inputStream = this.getClass().getResourceAsStream("/poi_nominatim.json");
+        if (inputStream == null) {
+            // if input stream is null, we must parse the nominatim file first
+            inputStream = this.getClass().getResourceAsStream("/poi_nominatim.txt");
+            NominatimSpecialPhrasesConverter converter = new NominatimSpecialPhrasesConverter(inputStream);
+            this.poiTypes = converter.convertFromStream();
+        } else {
+            // a json file already exists and we can directly read it without parsing
+            NominatimSpecialPhrasesConverter converter = new NominatimSpecialPhrasesConverter(inputStream);
+            this.poiTypes = converter.convertFromJsonStream();
+        }
+        logger.info("Identified {} POI types which will be available later.", this.poiTypes.size());
     }
 
 
@@ -175,9 +183,16 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
             switch (item.getType()) {
                 case ReaderElement.NODE:
                     ReaderNode readerNode = (ReaderNode) item;
+                    if (!readerNode.hasTags()) {
+                        // if the node has no tags, it doesn't make sense to investigate it
+                        return false;
+                    }
+
+                    // check if node is a POI by verifying the POI key and value
                     Set<String> keys = this.poiTypes.keySet();
                     for (String key : keys) {
                         if (readerNode.hasTag(key, this.poiTypes.get(key))) {
+                            // node is a POI, thus add to graph
                             Node node = new Node(readerNode.getLat(), readerNode.getLon());
                             node.setPoi(true);
                             node.setType(key, readerNode.getTag(key));

@@ -99,7 +99,6 @@ public class Node implements Comparable<Node> {
                 .append(id, node.id)
                 .append(lat, node.lat)
                 .append(lon, node.lon)
-                .append(offsetPointer, node.offsetPointer)
                 .isEquals();
     }
 
@@ -110,7 +109,6 @@ public class Node implements Comparable<Node> {
                 .append(id)
                 .append(lat)
                 .append(lon)
-                .append(offsetPointer)
                 .toHashCode();
     }
 

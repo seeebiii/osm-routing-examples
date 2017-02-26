@@ -1,5 +1,6 @@
 package de.sebastianhesse.pbf.reader;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -16,6 +17,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -102,6 +104,31 @@ public class NominatimSpecialPhrasesConverter {
             this.phrases.put(key, values);
         }
         values.add(value);
+    }
+
+
+    public Map<String, Set<String>> convertFromJsonStream() {
+        if (this.inputStream == null) {
+            throw new IllegalStateException("Only call this method if you're using an InputStream.");
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            JsonNode jsonNode = mapper.readTree(this.inputStream);
+            Iterator<Map.Entry<String, JsonNode>> iter = jsonNode.fields();
+            while (iter.hasNext()) {
+                Map.Entry<String, JsonNode> next = iter.next();
+                String key = next.getKey();
+                JsonNode value = next.getValue();
+                Set<String> values = new HashSet<>(value.size());
+                value.forEach(element -> {
+                    values.add(element.textValue());
+                });
+                this.phrases.put(key, values);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return this.phrases;
     }
 
 
