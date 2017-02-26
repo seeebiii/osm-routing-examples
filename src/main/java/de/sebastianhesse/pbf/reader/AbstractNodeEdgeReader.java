@@ -149,7 +149,6 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
                     if (this.nodeCounter.containsKey(readerNode.getId())) {
                         final Node node = new Node(readerNode.getLat(), readerNode.getLon());
                         node.setId(readerNode.getId());
-                        node.setGasStation(readerNode.hasTag("amenity", "fuel"));
                         int nodeIndex = this.graph.addNode(node);
                         this.osmIdMapping.put(readerNode.getId(), nodeIndex);
 
@@ -180,7 +179,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
                     for (String key : keys) {
                         if (readerNode.hasTag(key, this.poiTypes.get(key))) {
                             Node node = new Node(readerNode.getLat(), readerNode.getLon());
-                            node.setGasStation(true);
+                            node.setPoi(true);
                             node.setType(key, readerNode.getTag(key));
                             if (this.osmIdMapping.containsKey(readerNode.getId())) {
                                 node.setId(this.osmIdMapping.get(readerNode.getId()));

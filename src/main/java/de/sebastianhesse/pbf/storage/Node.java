@@ -16,7 +16,7 @@ public class Node implements Comparable<Node> {
     private double lat;
     private double lon;
     private int offsetPointer = -1;
-    private boolean isGasStation = false;
+    private boolean poi = false;
     private String typeKey = "";
     private String typeValue = "";
 
@@ -57,13 +57,13 @@ public class Node implements Comparable<Node> {
     }
 
 
-    public boolean isGasStation() {
-        return isGasStation;
+    public boolean isPoi() {
+        return poi;
     }
 
 
-    public void setGasStation(boolean gasStation) {
-        isGasStation = gasStation;
+    public void setPoi(boolean poi) {
+        this.poi = poi;
     }
 
 

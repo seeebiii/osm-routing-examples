@@ -306,7 +306,14 @@ public class Graph {
 
 
     public void addPoi(Node node, long idx) {
-        this.pois.put(node, idx);
+        // if we already know the node, then use that node object instead of storing a copy
+        if (idx > -1 && idx < this.nodes.length) {
+            int i = Long.valueOf(idx).intValue();
+            Node existingNode = this.nodes[i];
+            this.pois.put(existingNode, idx);
+        } else {
+            this.pois.put(node, idx);
+        }
     }
 
 
