@@ -1,5 +1,8 @@
 package de.sebastianhesse.pbf.storage;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+
 /**
  * Offset class to be used for a {@link Graph} to structure objects within an array using a certain ordering.
  * Indicates the starting offset and a link to the next offset to simplify searching.
@@ -35,5 +38,15 @@ public class GridOffset {
 
     public String getNextOffset() {
         return nextOffset;
+    }
+
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("name", name)
+                .append("offset", offset)
+                .append("nextOffset", nextOffset)
+                .toString();
     }
 }

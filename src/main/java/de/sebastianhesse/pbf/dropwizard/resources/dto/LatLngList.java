@@ -2,6 +2,8 @@ package de.sebastianhesse.pbf.dropwizard.resources.dto;
 
 import de.sebastianhesse.pbf.storage.Node;
 import de.sebastianhesse.pbf.util.GraphUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,11 +15,15 @@ import java.util.stream.Collectors;
  */
 public class LatLngList {
 
+    private static final Logger logger = LoggerFactory.getLogger(LatLngList.class);
+
     public List<Double[]> points;
     public double distance = 0;
 
 
     public LatLngList(List<Node> nodes) {
+        long startTime = System.currentTimeMillis();
+
         this.points = nodes.stream()
                 .map(node -> new Double[] {node.getLat(), node.getLon(), Long.valueOf(node.getId()).doubleValue()})
                 .collect(Collectors.toCollection(ArrayList::new));
@@ -30,5 +36,7 @@ public class LatLngList {
                 last = current;
             }
         }
+
+        logger.info("It took {} ms to build the response object.", (System.currentTimeMillis() - startTime));
     }
 }

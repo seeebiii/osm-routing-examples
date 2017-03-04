@@ -16,6 +16,7 @@ public class Node implements Comparable<Node> {
     private double lat;
     private double lon;
     private int offsetPointer = -1;
+    private boolean crossing = false;
     private boolean poi = false;
     private String typeKey = "";
     private String typeValue = "";
@@ -54,6 +55,16 @@ public class Node implements Comparable<Node> {
 
     public void setOffsetPointer(int offsetPointer) {
         this.offsetPointer = offsetPointer;
+    }
+
+
+    public boolean isCrossing() {
+        return crossing;
+    }
+
+
+    public void setCrossing(boolean crossing) {
+        this.crossing = crossing;
     }
 
 

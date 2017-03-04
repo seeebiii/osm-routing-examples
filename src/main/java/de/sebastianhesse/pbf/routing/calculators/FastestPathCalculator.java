@@ -3,6 +3,7 @@ package de.sebastianhesse.pbf.routing.calculators;
 import de.sebastianhesse.pbf.routing.accessors.WayAccessor;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Node;
+import de.sebastianhesse.pbf.util.GraphUtil;
 import gnu.trove.map.TIntDoubleMap;
 
 import java.util.Optional;
@@ -20,11 +21,13 @@ public class FastestPathCalculator extends AbstractPathCalculator {
 
 
     @Override
-    public Optional<CalculationResult> checkNeighbourAndCosts(Node node, Edge edge) {
+    public Optional<CalculationResult> checkNeighbourAndCosts(Node node, Edge edge, Node crossingNode) {
         if (edge.getSpeed() > 0) {
-            double weightToNeighbour = getExistingDistance((int) node.getId()) + edge.getDistance() / edge.getSpeed();
-            if (getExistingDistance(edge.getTargetNode()) > weightToNeighbour) {
-                return Optional.of(new CalculationResult(edge.getTargetNode(), weightToNeighbour));
+            int targetNodeId = crossingNode == null ? edge.getTargetNode() : (int) crossingNode.getId();
+            double distance = crossingNode == null ? edge.getDistance() : GraphUtil.getDistance(node, crossingNode);
+            double weightToNeighbour = getExistingDistance((int) node.getId()) + distance / edge.getSpeed();
+            if (getExistingDistance(targetNodeId) > weightToNeighbour) {
+                return Optional.of(new CalculationResult(targetNodeId, weightToNeighbour));
             }
         }
         return Optional.empty();

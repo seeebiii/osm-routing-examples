@@ -88,7 +88,7 @@ public class OptimizedNodeEdgeReader extends AbstractNodeEdgeReader {
                 // ignore nodes which just exist once in the graph and remove them from the node counter;
                 // otherwise interpret it as an edge and add it to the graph
                 if (this.nodeCounter.containsKey(nodeId) && this.nodeCounter.get(nodeId) > 1) {
-                    addEdgeToGraph(way, sourceNode, nodeId);
+                    addEdgeToGraph(way, sourceNode, nodeId, -1, -1);
                     // set the source node to the current one for the next possible edge
                     sourceNode = nodeId;
                 } else {
@@ -97,7 +97,7 @@ public class OptimizedNodeEdgeReader extends AbstractNodeEdgeReader {
             }
 
             // this edge is either the whole way or the last edge of a split way
-            addEdgeToGraph(way, sourceNode, oldNodes.get(oldNodesSize - 1));
+            addEdgeToGraph(way, sourceNode, oldNodes.get(oldNodesSize - 1), -1, -1);
         });
 
         logger.info("Finished import: Imported " + this.edgeCounter + " edges.");

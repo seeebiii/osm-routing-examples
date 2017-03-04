@@ -8,6 +8,7 @@ import de.sebastianhesse.pbf.routing.DijkstraOptions;
 import de.sebastianhesse.pbf.routing.calculators.CalculationType;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
+import de.sebastianhesse.pbf.util.GraphUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +38,27 @@ public class RoutingResource {
 
     public RoutingResource(Graph graph) {
         this.graph = graph;
+    }
+
+
+    @GET
+    @Path("/points")
+    public Response getLocalPoints(@QueryParam("lat") double lat, @QueryParam("lon") double lon,
+                                   @QueryParam("dist") @DefaultValue("10") int maxDistance) {
+        Optional<Node> closestNode = this.graph.findClosestNode(lat, lon);
+        if (closestNode.isPresent()) {
+            List<Node> nodes = new ArrayList<>();
+            Node node = closestNode.get();
+            for (Node tmpNode : this.graph.getNodes()) {
+                double distance = GraphUtil.getDistance(node, tmpNode);
+                if (distance < maxDistance) {
+                    nodes.add(tmpNode);
+                }
+            }
+
+            return Response.ok(new LatLngList(nodes)).build();
+        }
+        return Response.status(Response.Status.BAD_REQUEST).build();
     }
 
 
@@ -60,6 +83,7 @@ public class RoutingResource {
                                       @QueryParam("lat2") double lat2, @QueryParam("lon2") double lon2,
                                       @QueryParam("pid2") @DefaultValue("-1") String pid2,
                                       @QueryParam("vehicle") String vehicle, @QueryParam("mode") String mode) {
+        long startTime = System.currentTimeMillis();
         Accessor accessor = Accessor.valueOf(vehicle.toUpperCase());
         CalculationType calculationType = CalculationType.valueOf(mode.toUpperCase());
         DijkstraOptions dijkstraOptions = new DijkstraOptions(accessor, calculationType);
@@ -73,6 +97,7 @@ public class RoutingResource {
         if (startNodeOptional.isPresent() && endNodeOptional.isPresent()) {
             Node startNode = startNodeOptional.get();
             Node endNode = endNodeOptional.get();
+            logger.info("It took {} ms to prepare Dijkstra algorithm.", (System.currentTimeMillis() - startTime));
             return getShortestPathWithDijkstra(dijkstraOptions, startNode, endNode);
         } else {
             return Response.status(Response.Status.CONFLICT)

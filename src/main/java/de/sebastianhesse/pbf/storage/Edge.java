@@ -14,6 +14,7 @@ public class Edge {
     private String type;
     private int sourceNode;
     private int targetNode;
+    private int nextCrossing;
     private double distance = 0;
     private short speed = 0;
     // allowed: car, pedestrian
@@ -24,6 +25,7 @@ public class Edge {
         this.type = type;
         this.sourceNode = sourceNode;
         this.targetNode = targetNode;
+        this.nextCrossing = -1;
     }
 
 
@@ -39,6 +41,16 @@ public class Edge {
 
     public int getTargetNode() {
         return targetNode;
+    }
+
+
+    public void setNextCrossing(int crossing) {
+        this.nextCrossing = crossing;
+    }
+
+
+    public int getNextCrossing() {
+        return this.nextCrossing;
     }
 
 

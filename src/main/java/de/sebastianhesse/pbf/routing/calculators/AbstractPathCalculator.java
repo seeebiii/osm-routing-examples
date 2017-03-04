@@ -33,14 +33,14 @@ public abstract class AbstractPathCalculator implements PathCalculator {
 
 
     @Override
-    public Optional<CalculationResult> calculateCostsToNeighbour(Node node, Edge edge) {
+    public Optional<CalculationResult> calculateCostsToNeighbour(Node node, Edge edge, Node crossingNode) {
         if (wayAccessor.canAccessWay(edge)) {
-            return checkNeighbourAndCosts(node, edge);
+            return checkNeighbourAndCosts(node, edge, crossingNode);
         } else {
             return Optional.empty();
         }
     }
 
 
-    protected abstract Optional<CalculationResult> checkNeighbourAndCosts(Node node, Edge edge);
+    protected abstract Optional<CalculationResult> checkNeighbourAndCosts(Node node, Edge edge, Node crossingNode);
 }

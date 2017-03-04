@@ -157,6 +157,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
                     if (this.nodeCounter.containsKey(readerNode.getId())) {
                         final Node node = new Node(readerNode.getLat(), readerNode.getLon());
                         node.setId(readerNode.getId());
+                        node.setCrossing(this.nodeCounter.get(readerNode.getId()) > 1);
                         int nodeIndex = this.graph.addNode(node);
                         this.osmIdMapping.put(readerNode.getId(), nodeIndex);
 
@@ -217,19 +218,20 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
     protected abstract void readEdgesOfWays();
 
 
-    protected void addEdgeToGraph(Way way, long sourceNodeOsmId, long targetNodeOsmId) {
+    protected void addEdgeToGraph(Way way, long sourceNodeOsmId, long targetNodeOsmId,
+                                  long lastCrossing, long nextCrossing) {
         int sourceNodeIndex = this.osmIdMapping.get(sourceNodeOsmId);
         int targetNodeIndex = this.osmIdMapping.get(targetNodeOsmId);
-        this.graph.addEdge(getEdge(way, sourceNodeIndex, targetNodeIndex));
+        this.graph.addEdge(getEdge(way, sourceNodeIndex, targetNodeIndex, nextCrossing));
 
         if (this.validator.isNotOneWay(way)) {
             // in case the way can be used in both directions, we need to add a reverse edge
-            this.graph.addEdge(getEdge(way, targetNodeIndex, sourceNodeIndex));
+            this.graph.addEdge(getEdge(way, targetNodeIndex, sourceNodeIndex, lastCrossing));
         }
     }
 
 
-    protected Edge getEdge(Way way, int sourceNodeIndex, int targetNodeIndex) {
+    protected Edge getEdge(Way way, int sourceNodeIndex, int targetNodeIndex, long crossingId) {
         Edge edge = new Edge(way.getType(), sourceNodeIndex, targetNodeIndex);
 
         Node source = this.graph.getNodes()[sourceNodeIndex];
@@ -237,6 +239,9 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
         edge.setDistance(GraphUtil.getDistance(source, target));
         edge.setSpeed(way.getMaxSpeed());
         edge.setAccess(way.getAccess());
+        if (crossingId > -1 && this.osmIdMapping.containsKey(crossingId)) {
+            edge.setNextCrossing(this.osmIdMapping.get(crossingId));
+        }
 
         return edge;
     }

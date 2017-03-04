@@ -1,6 +1,7 @@
 package de.sebastianhesse.pbf.reader;
 
 import de.sebastianhesse.pbf.storage.Graph;
+import de.sebastianhesse.pbf.storage.Node;
 import gnu.trove.list.TLongList;
 import gnu.trove.map.hash.TLongIntHashMap;
 import org.slf4j.Logger;
@@ -63,16 +64,51 @@ public class SimpleNodeEdgeReader extends AbstractNodeEdgeReader {
             Way way = (Way) wayObj;
             final TLongList oldNodes = way.getNodes();
             final int oldNodesSize = oldNodes.size();
+
+            long[] crossings = new long[oldNodesSize];
+            for (int i = 0; i < oldNodesSize; i++) {
+                Node node = this.graph.getNodes()[this.osmIdMapping.get(oldNodes.get(i))];
+                if (node.isCrossing()) {
+                    crossings[i] = oldNodes.get(i);
+                } else {
+                    crossings[i] = -1;
+                }
+            }
+
             long sourceNode = oldNodes.get(0);
+            long lastCrossing;
+            long nextCrossing;
 
             for (int j = 1; j < oldNodesSize; j++) {
                 long nodeId = oldNodes.get(j);
-                addEdgeToGraph(way, sourceNode, nodeId);
+                lastCrossing = getLastCrossing(crossings, j);
+                nextCrossing = getNextCrossing(crossings, j);
+                addEdgeToGraph(way, sourceNode, nodeId, lastCrossing, nextCrossing);
                 sourceNode = nodeId;
             }
         });
 
         logger.info("Finished import: Imported " + this.edgeCounter + " edges.");
         logger.debug("--- Graph ---\n" + this.graph.toSampleString());
+    }
+
+
+    private long getLastCrossing(long[] crossings, int idx) {
+        for (int i = idx - 1; i >= 0; i--) {
+            if (crossings[i] > -1) {
+                return crossings[i];
+            }
+        }
+        return -1;
+    }
+
+
+    private long getNextCrossing(long[] crossings, int idx) {
+        for (int i = idx; i < crossings.length; i++) {
+            if (crossings[i] > -1) {
+                return crossings[i];
+            }
+        }
+        return -1;
     }
 }

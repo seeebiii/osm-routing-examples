@@ -1,3 +1,7 @@
+xy = null;
+showPoint = null;
+showLine = null;
+
 $(document).ready(function () {
   var points = [];
   var markers = [];
@@ -12,6 +16,38 @@ $(document).ready(function () {
     popupAnchor: [1, -34],
     shadowSize: [41, 41]
   });
+  var redIcon = new L.Icon({
+    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+  showPoint = function(lat, lng) {
+    L.marker([lat, lng], {icon: redIcon}).addTo(map);
+  };
+
+  showLine = function(points) {
+    var polyline = L.polyline(points).addTo(map);
+    map.fitBounds(polyline.getBounds());
+  };
+
+  xy = function(lat, lng, dist) {
+    $.ajax({
+      url: '/api/route/points?lat=' + (!!lat ? lat : '48.72819563976143') +
+      '&lon=' + (!!lng ? lng : '9.124341895803811') + '&dist=' + (!!dist ? dist : 80),
+      type: 'GET'
+    }).done(function (data) {
+      console.log(data.points);
+      data.points.forEach(function (value) {
+        console.log(value);
+        L.marker([value[0], value[1]]).addTo(map);
+      });
+      map.fitBounds(data.points);
+    });
+  };
 
   // initialize map with mapbox tiles
   L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v10/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1Ijoic2VlZWJpaWkiLCJhIjoiY2l5NGpxc21wMDAxMTMycWg5ZWNlODg3MCJ9.l-3rv7-j3rxd8iSjIqZfqw', {
@@ -33,6 +69,7 @@ $(document).ready(function () {
 
   // register click and change handler
   map.on('click', function (e) {
+    console.log('point: ', e.latlng);
     if ((showPois && points.length >= 1) || (!showPois && points.length >= 2)) {
       resetMap();
     }

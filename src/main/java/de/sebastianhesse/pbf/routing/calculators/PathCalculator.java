@@ -20,5 +20,5 @@ public interface PathCalculator {
      * @param edge edge from node to a neighbour
      * @return maybe a {@link CalculationResult} if costs from {@code node} to neighbour are lower than existing costs
      */
-    Optional<CalculationResult> calculateCostsToNeighbour(Node node, Edge edge);
+    Optional<CalculationResult> calculateCostsToNeighbour(Node node, Edge edge, Node crossingNode);
 }

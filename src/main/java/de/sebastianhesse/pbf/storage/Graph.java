@@ -5,11 +5,13 @@ import de.sebastianhesse.pbf.util.GraphUtil;
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 public class Graph {
 
     private static final Logger logger = LoggerFactory.getLogger(Graph.class);
+    public static final double MAX_DIFF = 0.1;
 
     private Node[] nodes = null;
     private Edge[] edges = null;
@@ -95,20 +98,20 @@ public class Graph {
                 return 0;
             }
 
-            short lat1 = (short) node1.getLat();
-            short lat2 = (short) node2.getLat();
-            short lon1 = (short) node1.getLon();
-            short lon2 = (short) node2.getLon();
+            BigDecimal lat1 = BigDecimal.valueOf(node1.getLat());
+            BigDecimal lat2 = BigDecimal.valueOf(node2.getLat());
+            BigDecimal lon1 = BigDecimal.valueOf(node1.getLon());
+            BigDecimal lon2 = BigDecimal.valueOf(node2.getLon());
 
-            if (lat1 == lat2 && lon1 == lon2) {
+            if (compare(lat1, lat2) == 0 && compare(lon1, lon2) == 0) {
                 return 0;
             }
 
-            if ((lat1 == lat2 && lon1 < lon2) || lat1 > lat2) {
+            if (compare(lat1, lat2) == 1 || (compare(lat1, lat2) == 0 && compare(lon1, lon2) == -1)) {
                 return -1;
             }
 
-            if ((lat1 == lat2 && lon1 > lon2) || lat1 < lat2) {
+            if (compare(lat1, lat2) == -1 || (compare(lat1, lat2) == 0 && compare(lon1, lon2) == 1)) {
                 return 1;
             }
 
@@ -118,10 +121,12 @@ public class Graph {
 
 
     private void calcGridOffsetsOnNodesAndUpdateBoundaries() {
-        short lat = (short) this.nodes[0].getLat();
-        short lon = (short) this.nodes[0].getLon();
-        GridOffset lastOffset = new GridOffset(getGridCellName(lat, lon), 0);
+        BigDecimal lat = BigDecimal.valueOf(this.nodes[0].getLat());
+        BigDecimal lon = BigDecimal.valueOf(this.nodes[0].getLon());
+        String gridCellName = getGridCellName(getGridCellPart(lat), getGridCellPart(lon));
+        GridOffset lastOffset = new GridOffset(gridCellName, 0);
         this.gridOffsets.put(lastOffset.getName(), lastOffset);
+        BigDecimal maxDiff = BigDecimal.valueOf(MAX_DIFF);
 
         for (int i = 1; i < this.nodes.length; i++) {
             Node node = this.nodes[i];
@@ -133,19 +138,23 @@ public class Graph {
             boolean updatedLatOrLong = false;
 
             // every time the grid coordinates change, we add another offset entry
-            if (((short) node.getLon()) != lon) {
-                lon = (short) node.getLon();
+            BigDecimal lat1 = BigDecimal.valueOf(node.getLat());
+            BigDecimal lon1 = BigDecimal.valueOf(node.getLon());
+
+            if (isNewDecimalRange(lat, lat1, maxDiff)) {
+                lat = BigDecimal.valueOf(node.getLat());
                 updatedLatOrLong = true;
             }
 
-            if (((short) node.getLat()) != lat) {
-                lat = (short) node.getLat();
+            if (isNewDecimalRange(lon, lon1, maxDiff)) {
+                lon = BigDecimal.valueOf(node.getLon());
                 updatedLatOrLong = true;
             }
+
 
             // only update the offset if the current value belongs to the next grid
             if (updatedLatOrLong) {
-                String nextOffsetName = getGridCellName(lat, lon);
+                String nextOffsetName = getGridCellName(getGridCellPart(lat), getGridCellPart(lon));
                 lastOffset.setNextOffset(nextOffsetName);
                 this.gridOffsets.put(lastOffset.getName(), lastOffset);
                 lastOffset = new GridOffset(nextOffsetName, i);
@@ -279,6 +288,40 @@ public class Graph {
     }
 
 
+    /**
+     * Gets the way from a source node and a target node of a simple way. A simple way means that there is no other
+     * way between those two points, i.e. there is no crossing between them.
+     *
+     * @param source the first node of the way
+     * @param target the node to end the way with; must be reachable from source
+     * @return list of nodes, exclusively source and target node;
+     * if target is the direct successor of source, the list just contains the source node
+     */
+    public List<Node> getNodesOfSimpleWay(Node source, Node target) {
+        List<Node> nodes = new ArrayList<>();
+        if (source.equals(target)) {
+            return nodes;
+        }
+        int offset = source.getOffsetPointer();
+        Edge edge = this.edges[offset];
+        while (edge.getTargetNode() != (int) target.getId()) {
+            Node n = this.nodes[edge.getTargetNode()];
+            List<Edge> neighbours = this.getNeighboursOfNode(n, new TLongHashSet());
+            if (neighbours.size() > 1) {
+                break;
+            }
+            offset = this.nodes[edge.getTargetNode()].getOffsetPointer();
+            if (offset > -1) {
+                edge = this.edges[offset];
+                nodes.add(this.nodes[edge.getSourceNode()]);
+            } else {
+                break;
+            }
+        }
+        return nodes;
+    }
+
+
     public Optional<Node> findClosestNode(int id, double lat, double lon) {
         if (id > -1 && id < this.nodes.length) {
             return Optional.ofNullable(this.nodes[id]);
@@ -290,30 +333,63 @@ public class Graph {
 
     public Optional<Node> findClosestNode(double lat, double lon) {
         try {
+            List<GridOffset> cells = getGridCellsAround(lat, lon);
             Node searchNode = new Node(lat, lon);
-            GridOffset offset = getGridCellOffset(lat, lon);
-            GridOffset nextOffset = getGridCellOffset(offset.getNextOffset());
-            int upperOffsetLimit = nextOffset != null ? nextOffset.getOffset() : this.nodes.length;
             double distance = Double.MAX_VALUE;
             Node selectedNode = null;
-            for (int i = offset.getOffset(); i < upperOffsetLimit; i++) {
-                Node node = this.nodes[i];
-                if (node.getLat() == lat && node.getLon() == lon) {
-                    return Optional.of(node);
+
+            // search in all grids around the searchNode
+            for (GridOffset offset : cells) {
+                GridOffset nextOffset = null;
+                int upperBound = nodeIdx;
+                try {
+                    nextOffset = getGridCellOffset(offset.getNextOffset());
+                    upperBound = nextOffset.getOffset();
+                } catch (OutOfRangeException e) {
+                    logger.debug("No next offset available.");
                 }
 
-                double tmpDistance = Math.abs(GraphUtil.getDistance(searchNode, node));
-                if (tmpDistance < distance) {
-                    selectedNode = node;
-                    distance = tmpDistance;
+                for (int i = offset.getOffset(); i < upperBound; i++) {
+                    Node node = this.nodes[i];
+                    if (node.getLat() == lat && node.getLon() == lon) {
+                        return Optional.of(node);
+                    }
+
+                    double tmpDistance = Math.abs(GraphUtil.getDistance(searchNode, node));
+                    if (tmpDistance < distance) {
+                        selectedNode = node;
+                        distance = tmpDistance;
+                    }
                 }
             }
 
-            // if no match was found, just return an empty optional
+            // maybe we still haven't found the node yet, thus use ofNullable
             return Optional.ofNullable(selectedNode);
         } catch (OutOfRangeException e) {
+            // if grid cell was not found, just return an empty optional
             return Optional.empty();
         }
+    }
+
+
+    private List<GridOffset> getGridCellsAround(double lat, double lon) {
+        BigDecimal lat1 = BigDecimal.valueOf(lat);
+        BigDecimal lon1 = BigDecimal.valueOf(lon);
+        List<GridOffset> offsets = new ArrayList<>(9);
+
+        for (short i = -1; i < 2; i++) {
+            for (short j = -1; j < 2; j++) {
+                try {
+                    BigDecimal lat2 = BigDecimal.valueOf(i * MAX_DIFF);
+                    BigDecimal lon2 = BigDecimal.valueOf(j * MAX_DIFF);
+                    offsets.add(getGridCellOffset(getGridCellName(lat1.subtract(lat2), lon1.add(lon2))));
+                } catch (OutOfRangeException e) {
+                    // do nothing, it just means we're out of the grid range
+                }
+            }
+        }
+
+        return offsets;
     }
 
 
@@ -377,34 +453,51 @@ public class Graph {
      * Returns the {@link GridOffset} containing the first point of a grid cell in the node list.
      * If lat/lon can't be matched to a cell, it means this point is out of range.
      *
-     * @param lat latitude of a point
-     * @param lon longitude of a point
+     * @param name comma separated lat lon value
      * @return the {@link GridOffset} containing the first point of a grid cell
      * @throws OutOfRangeException if lat/lon can't be matched to a cell
      */
-    private GridOffset getGridCellOffset(double lat, double lon) {
-        if (this.gridOffsets.containsKey(getGridCellName(lat, lon))) {
-            return this.gridOffsets.get(getGridCellName(lat, lon));
-        }
-
-        throw new OutOfRangeException("The lat and lon you've provided is out of range.");
-    }
-
-
-    private GridOffset getGridCellOffset(String name) {
+    private GridOffset getGridCellOffset(String name) throws OutOfRangeException {
         if (StringUtils.isBlank(name) || !this.gridOffsets.containsKey(name)) {
-            return null;
+            throw new OutOfRangeException("The lat and lon you've provided is out of range.");
         }
         return this.gridOffsets.get(name);
     }
 
 
-    private String getGridCellName(double lat, double lon) {
-        return getGridCellName((short) lat, (short) lon);
+    private String getGridCellName(BigDecimal one, BigDecimal two) {
+        return getGridCellPart(one) + "," + getGridCellPart(two);
     }
 
 
-    private String getGridCellName(short lat, short lon) {
-        return Short.toString(lat) + "," + Short.toString(lon);
+    private String getGridCellName(String lat, String lon) {
+        return lat + "," + lon;
+    }
+
+
+    private String getGridCellPart(BigDecimal decimal) {
+        return getScaledDecimal(decimal, 1).toString();
+    }
+
+
+    private boolean isNewDecimalRange(BigDecimal one, BigDecimal two, BigDecimal maxDiff) {
+        // number of decimal parts, e.g 1.123 => 3 decimal parts
+        int roundingSize = 1;
+        one = getScaledDecimal(one, roundingSize);
+        two = getScaledDecimal(two, roundingSize);
+        return one.subtract(two).abs().compareTo(maxDiff) > -1;
+    }
+
+
+    private int compare(BigDecimal one, BigDecimal two) {
+        int roundingSize = 1;
+        one = getScaledDecimal(one, roundingSize);
+        two = getScaledDecimal(two, roundingSize);
+        return one.compareTo(two);
+    }
+
+
+    private BigDecimal getScaledDecimal(BigDecimal decimal, int roundingSize) {
+        return decimal.setScale(roundingSize, BigDecimal.ROUND_DOWN);
     }
 }
