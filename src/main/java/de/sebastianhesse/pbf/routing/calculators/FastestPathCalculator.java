@@ -25,8 +25,8 @@ public class FastestPathCalculator extends AbstractPathCalculator {
         if (edge.getSpeed() > 0) {
             int targetNodeId = crossingNode == null ? edge.getTargetNode() : (int) crossingNode.getId();
             double distance = crossingNode == null ? edge.getDistance() : GraphUtil.getDistance(node, crossingNode);
-            double weightToNeighbour = getExistingDistance((int) node.getId()) + distance / edge.getSpeed();
-            if (getExistingDistance(targetNodeId) > weightToNeighbour) {
+            double weightToNeighbour = getExistingWeight((int) node.getId()) + distance / edge.getSpeed();
+            if (getExistingWeight(targetNodeId) > weightToNeighbour) {
                 return Optional.of(new CalculationResult(targetNodeId, weightToNeighbour));
             }
         }

@@ -16,9 +16,21 @@ public class Node implements Comparable<Node> {
     private double lat;
     private double lon;
     private int offsetPointer = -1;
+    /**
+     * if this node is a junction or node
+     */
     private boolean crossing = false;
+    /**
+     * if this node is a POI or not
+     */
     private boolean poi = false;
+    /**
+     * type of POI
+     */
     private String typeKey = "";
+    /**
+     * value for POI type
+     */
     private String typeValue = "";
 
 

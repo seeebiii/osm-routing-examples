@@ -23,7 +23,7 @@ public abstract class AbstractPathCalculator implements PathCalculator {
     }
 
 
-    protected double getExistingDistance(int nodeId) {
+    protected double getExistingWeight(int nodeId) {
         if (distances.containsKey(nodeId)) {
             return distances.get(nodeId);
         } else {

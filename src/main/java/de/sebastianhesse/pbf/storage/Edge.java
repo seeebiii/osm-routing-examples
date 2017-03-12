@@ -11,6 +11,9 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 public class Edge {
 
+    /**
+     * highway type of the edge, e.g. motorway_link
+     */
     private String type;
     private int sourceNode;
     private int targetNode;
