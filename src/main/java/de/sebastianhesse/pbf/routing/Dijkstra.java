@@ -1,20 +1,11 @@
 package de.sebastianhesse.pbf.routing;
 
 import com.google.common.collect.Lists;
-import de.sebastianhesse.pbf.reader.Accessor;
-import de.sebastianhesse.pbf.routing.accessors.CarAccessor;
-import de.sebastianhesse.pbf.routing.accessors.PedestrianAccessor;
-import de.sebastianhesse.pbf.routing.accessors.WayAccessor;
 import de.sebastianhesse.pbf.routing.calculators.CalculationResult;
-import de.sebastianhesse.pbf.routing.calculators.FastestPathCalculator;
-import de.sebastianhesse.pbf.routing.calculators.PathCalculator;
-import de.sebastianhesse.pbf.routing.calculators.ShortestPathCalculator;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
-import gnu.trove.map.TIntDoubleMap;
 import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
@@ -32,37 +23,21 @@ import java.util.Optional;
 /**
  * A simple Dijkstra implementation.
  */
-public class Dijkstra extends Thread {
+public class Dijkstra extends BaseDijkstra {
 
     private static final Logger logger = LoggerFactory.getLogger(Dijkstra.class);
 
-    private Graph graph;
-    private Node source;
     private Node target;
     private Map<Node, Node> targetCrossings;
     private Node finalTargetCrossing = null;
-    private Node[] nodes;
-
-    // store costs
-    private TIntDoubleMap distances;
-    // store nodes of shortest path
-    private TIntIntMap predecessors;
     private TIntIntMap crossingStarts;
-    private PathCalculator pathCalculator;
-    private DijkstraOptions options = DijkstraOptions.shortestWithCar();
 
 
     public Dijkstra(Graph graph, Node source, Node target, DijkstraOptions options) {
-        this.graph = graph;
-        this.source = source;
+        super(graph, source, options);
         this.target = target;
         this.targetCrossings = new HashMap<>();
-        this.nodes = this.graph.getNodes();
-        this.distances = new TIntDoubleHashMap(this.nodes.length / 2);
-        this.predecessors = new TIntIntHashMap(this.nodes.length / 2);
         this.crossingStarts = new TIntIntHashMap(this.nodes.length / 2);
-        this.options = options;
-        this.pathCalculator = getPathCalculator();
     }
 
 
@@ -74,7 +49,7 @@ public class Dijkstra extends Thread {
         TLongSet settled = new TLongHashSet();
         FibonacciHeap<Integer> unsettled = new FibonacciHeap<>();
         unsettled.enqueue((int) source.getId(), 0d);
-        distances.put((int) source.getId(), 0);
+        weights.put((int) source.getId(), 0);
         predecessors.put((int) source.getId(), -1);
 
         findNextTargetCrossings();
@@ -97,7 +72,7 @@ public class Dijkstra extends Thread {
                 break;
             }
 
-            // investigate all neighbours of the current node and update the distances, predecessors, etc
+            // investigate all neighbours of the current node and update the weights, predecessors, etc
             List<Edge> neighbours = this.graph.getNeighboursOfNode(node, settled);
             iterateOverNeighbours(unsettled, node, neighbours);
 
@@ -105,10 +80,10 @@ public class Dijkstra extends Thread {
             settled.add(node.getId());
         }
 
-        if (!distances.containsKey((int) target.getId()) && finalTargetCrossing == null) {
+        if (!weights.containsKey((int) target.getId()) && finalTargetCrossing == null) {
             logger.info("Can't find a way to target.");
             predecessors.clear();
-            distances.clear();
+            weights.clear();
         }
 
         logger.info("Finished Dijkstra in {} ms.", (System.currentTimeMillis() - startTime));
@@ -136,7 +111,7 @@ public class Dijkstra extends Thread {
             try {
                 Optional<CalculationResult> result = this.pathCalculator.calculateCostsToNeighbour(node, edge, crossingNode);
                 result.ifPresent(calculationResult -> {
-                    distances.put(targetNodeId, calculationResult.weight);
+                    weights.put(targetNodeId, calculationResult.weight);
                     predecessors.put(targetNodeId, (int) node.getId());
                     if (edge.getNextCrossing() > -1) {
                         // if current edge has a shortcut to a next crossing, we need to save the starting node
@@ -189,16 +164,6 @@ public class Dijkstra extends Thread {
     }
 
 
-    private Node getPredecessor(Node routeNode) {
-        return graph.getNodes()[predecessors.get((int) routeNode.getId())];
-    }
-
-
-    private boolean isPredecessor(Node routeNode) {
-        return predecessors.containsKey((int) routeNode.getId()) && predecessors.get((int) routeNode.getId()) != -1;
-    }
-
-
     private static String getPath(List<Node> path) {
         StringBuilder builder = new StringBuilder("[");
         path.forEach(node -> builder.append("[").append(node.getLat()).append(",").append(node.getLon()).append("],"));
@@ -226,10 +191,6 @@ public class Dijkstra extends Thread {
         }
 
         boolean avoidAddingStartCrossing = false;
-//        if (isPredecessor(startCrossing)) {
-//            path.add(startCrossing);
-//            avoidAddingStartCrossing = true;
-//        }
 
         // then get all nodes between them
         List<Node> nodes = this.graph.getNodesOfSimpleWay(startNode, target);
@@ -238,24 +199,5 @@ public class Dijkstra extends Thread {
         path.addAll(nodes);
         // return finalTargetCrossing which our new starting point
         return avoidAddingStartCrossing;
-    }
-
-
-    private PathCalculator getPathCalculator() {
-        WayAccessor accessor;
-        if (options.getAccessor().equals(Accessor.CAR)) {
-            accessor = new CarAccessor();
-        } else {
-            accessor = new PedestrianAccessor();
-        }
-
-        switch (options.getCalculationType()) {
-            case FASTEST:
-                return new FastestPathCalculator(this.distances, accessor);
-            case SHORTEST:
-                return new ShortestPathCalculator(this.distances, accessor);
-            default:
-                throw new IllegalStateException("Dijkstra options have a mismatching state: neither fastest nor shortest type was selected.");
-        }
     }
 }

@@ -98,7 +98,7 @@ public class RoutingResource {
             Node startNode = startNodeOptional.get();
             Node endNode = endNodeOptional.get();
             logger.info("It took {} ms to prepare Dijkstra algorithm.", (System.currentTimeMillis() - startTime));
-            return getShortestPathWithDijkstra(dijkstraOptions, startNode, endNode);
+            return getShortestPathWithDijkstra(dijkstraOptions, startNode, endNode, startTime);
         } else {
             return Response.status(Response.Status.CONFLICT)
                     .entity("Can not locate start or end node with given values.")
@@ -121,7 +121,7 @@ public class RoutingResource {
     }
 
 
-    private Response getShortestPathWithDijkstra(DijkstraOptions dijkstraOptions, Node startNode, Node endNode) {
+    private Response getShortestPathWithDijkstra(DijkstraOptions dijkstraOptions, Node startNode, Node endNode, long startTime) {
         Dijkstra dijkstra = new Dijkstra(graph, startNode, endNode, dijkstraOptions);
         dijkstra.run();
         try {
@@ -132,6 +132,7 @@ public class RoutingResource {
                         .entity("Could not find an existent way between given points.")
                         .build();
             } else {
+                logger.info("Complete time for request: {}", (System.currentTimeMillis() - startTime));
                 return Response.ok(new LatLngList(nodes)).build();
             }
         } catch (InterruptedException e) {

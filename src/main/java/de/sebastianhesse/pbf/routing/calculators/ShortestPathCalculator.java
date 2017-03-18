@@ -30,7 +30,7 @@ public class ShortestPathCalculator extends AbstractPathCalculator {
             calcDistanceToNeighbour += GraphUtil.getDistance(node, crossingNode);
         }
         if (getExistingWeight(targetNodeId) > calcDistanceToNeighbour) {
-            return Optional.of(new CalculationResult(targetNodeId, calcDistanceToNeighbour));
+            return Optional.of(new CalculationResult(targetNodeId, calcDistanceToNeighbour, calcDistanceToNeighbour, calcDistanceToNeighbour / edge.getSpeed()));
         }
         return Optional.empty();
     }
