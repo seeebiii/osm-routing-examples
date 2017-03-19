@@ -47,9 +47,13 @@ public abstract class AbstractPathCalculator implements PathCalculator {
 
     /**
      * @param edge current edge to check
-     * @return the edge speed in meter per seconds
+     * @return the edge speed (or the max. speed of the way accessor) in meter per seconds
      */
     protected double getSpeedInMeterPerSeconds(Edge edge) {
-        return edge.getSpeed() / 3.6;
+        short speed = edge.getSpeed();
+        if (speed > wayAccessor.getMaxSpeed()) {
+            speed = wayAccessor.getMaxSpeed();
+        }
+        return speed / 3.6;
     }
 }

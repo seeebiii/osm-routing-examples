@@ -10,13 +10,17 @@ import java.util.Set;
 
 
 /**
- * A custom validator for graph data.
+ * A custom validator for graph data. Based on:
+ * http://wiki.openstreetmap.org/wiki/OSM_tags_for_routing/Access-Restrictions#Germany
+ * http://wiki.openstreetmap.org/wiki/Key:access
  */
 public class ReaderWayValidator {
 
     protected static Set<String> notAcceptedTags = new HashSet<>();
     protected static Map<String, Short> maxSpeeds = new HashMap<>();
     protected static Set<String> positiveRestrictions = new HashSet<>();
+    protected static Set<String> pedestrianHighwayTypes = new HashSet<>();
+    protected static Set<String> carHighwayTypes = new HashSet<>();
 
 
     public ReaderWayValidator() {
@@ -50,6 +54,40 @@ public class ReaderWayValidator {
         positiveRestrictions.add("unknown");
         positiveRestrictions.add("permissive");
         positiveRestrictions.add("destination");
+
+        pedestrianHighwayTypes.add("trunk");
+        pedestrianHighwayTypes.add("primary");
+        pedestrianHighwayTypes.add("secondary");
+        pedestrianHighwayTypes.add("tertiary");
+        pedestrianHighwayTypes.add("trunk_link");
+        pedestrianHighwayTypes.add("primary_link");
+        pedestrianHighwayTypes.add("secondary_link");
+        pedestrianHighwayTypes.add("tertiary_link");
+        pedestrianHighwayTypes.add("unclassified");
+        pedestrianHighwayTypes.add("residential");
+        pedestrianHighwayTypes.add("living_street");
+        pedestrianHighwayTypes.add("road");
+        pedestrianHighwayTypes.add("service");
+        pedestrianHighwayTypes.add("track");
+        pedestrianHighwayTypes.add("footway");
+        pedestrianHighwayTypes.add("pedestrian");
+
+        carHighwayTypes.add("motorway");
+        carHighwayTypes.add("trunk");
+        carHighwayTypes.add("primary");
+        carHighwayTypes.add("secondary");
+        carHighwayTypes.add("tertiary");
+        carHighwayTypes.add("motorway_link");
+        carHighwayTypes.add("trunk_link");
+        carHighwayTypes.add("primary_link");
+        carHighwayTypes.add("secondary_link");
+        carHighwayTypes.add("tertiary_link");
+        carHighwayTypes.add("unclassified");
+        carHighwayTypes.add("residential");
+        carHighwayTypes.add("living_street");
+        carHighwayTypes.add("road");
+        carHighwayTypes.add("service");
+        carHighwayTypes.add("track");
     }
 
 
@@ -109,19 +147,24 @@ public class ReaderWayValidator {
 
 
     public boolean hasAccess(ReaderWay way, Accessor accessor) {
-        if (!way.hasTag("access") && !way.hasTag("motorcar") && !way.hasTag("motor_vehicle")) {
-            return true;
-        } else {
-            switch (accessor) {
-                case CAR:
+        switch (accessor) {
+            case CAR:
+                if (!way.hasTag("access") && !way.hasTag("motorcar") && !way.hasTag("motor_vehicle")) {
+                    return way.hasTag("highway", carHighwayTypes) ||
+                            way.hasTag("motorroad", "yes");
+                } else {
                     return way.hasTag("motorcar", positiveRestrictions) ||
                             way.hasTag("motor_vehicle", positiveRestrictions) ||
                             way.hasTag("access", positiveRestrictions);
-                case PEDESTRIAN:
-                    return way.hasTag("foot", positiveRestrictions);
-                default:
-                    return false;
-            }
+                }
+            case PEDESTRIAN:
+                if (way.hasTag("access")) {
+                    return way.hasTag("highway", pedestrianHighwayTypes) && way.hasTag("foot", positiveRestrictions);
+                } else {
+                    return way.hasTag("highway", pedestrianHighwayTypes);
+                }
+            default:
+                return false;
         }
     }
 }
