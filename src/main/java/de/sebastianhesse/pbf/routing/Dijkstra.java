@@ -5,7 +5,9 @@ import de.sebastianhesse.pbf.routing.calculators.CalculationResult;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
+import gnu.trove.map.TIntDoubleMap;
 import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
@@ -31,6 +33,8 @@ public class Dijkstra extends BaseDijkstra {
     private Map<Node, Node> targetCrossings;
     private Node finalTargetCrossing = null;
     private TIntIntMap crossingStarts;
+    private TIntDoubleMap distances;
+    private TIntDoubleMap distanceTimes;
 
 
     public Dijkstra(Graph graph, Node source, Node target, DijkstraOptions options) {
@@ -38,6 +42,8 @@ public class Dijkstra extends BaseDijkstra {
         this.target = target;
         this.targetCrossings = new HashMap<>();
         this.crossingStarts = new TIntIntHashMap(this.nodes.length / 2);
+        this.distances = new TIntDoubleHashMap();
+        this.distanceTimes = new TIntDoubleHashMap();
     }
 
 
@@ -113,10 +119,14 @@ public class Dijkstra extends BaseDijkstra {
                 result.ifPresent(calculationResult -> {
                     weights.put(targetNodeId, calculationResult.weight);
                     predecessors.put(targetNodeId, (int) node.getId());
+                    distances.put(targetNodeId, calculationResult.distance);
+                    distanceTimes.put(targetNodeId, calculationResult.distanceTime);
+
                     if (edge.getNextCrossing() > -1) {
                         // if current edge has a shortcut to a next crossing, we need to save the starting node
                         crossingStarts.put(targetNodeId, edge.getTargetNode());
                     }
+
                     // always put a new object on the heap and avoid a costly decreaseKey operation
                     // -> when polling the heap, make sure to check if we already visited the node
                     unsettled.enqueue(targetNodeId, calculationResult.weight);
@@ -131,14 +141,16 @@ public class Dijkstra extends BaseDijkstra {
     }
 
 
-    public List<Node> retrieveShortestPath() {
+    public DijkstraResult retrieveShortestPath() {
         if (predecessors.isEmpty()) {
-            return Lists.newArrayList();
+            return new DijkstraResult(Lists.newArrayList(), 0, 0);
         }
 
         long startTime = System.currentTimeMillis();
 
-        List<Node> path = new ArrayList<>(predecessors.size());
+        List<Node> path = new ArrayList<>();
+        double distance = 0;
+        double timeInSeconds = 0;
         Node routeNode = target;
         boolean avoidAddingRouteNode = false;
         if (!target.isCrossing() && finalTargetCrossing != null) {
@@ -146,12 +158,16 @@ public class Dijkstra extends BaseDijkstra {
             avoidAddingRouteNode = addNodesFromTargetToNextCrossing(path, finalTargetCrossing, target);
             routeNode = finalTargetCrossing;
         }
+        distance += distances.get((int) routeNode.getId());
+        timeInSeconds += distanceTimes.get((int) routeNode.getId());
         while (isPredecessor(routeNode)) {
             if (!avoidAddingRouteNode) {
                 path.add(routeNode);
             }
             Node tmpTarget = routeNode;
             routeNode = getPredecessor(routeNode);
+            distance += distances.get((int) routeNode.getId());
+            timeInSeconds += distanceTimes.get((int) routeNode.getId());
             if (routeNode.isCrossing() || routeNode.equals(this.source)) {
                 avoidAddingRouteNode = addNodesFromTargetToNextCrossing(path, routeNode, tmpTarget);
             }
@@ -159,27 +175,19 @@ public class Dijkstra extends BaseDijkstra {
         path.add(this.source);
         // nodes are ordered from target to source, but we want them in the direction from source to target
         Collections.reverse(path);
-        logger.info("It took {} ms to generate the whole list of points.", (System.currentTimeMillis() - startTime));
-        return path;
-    }
-
-
-    private static String getPath(List<Node> path) {
-        StringBuilder builder = new StringBuilder("[");
-        path.forEach(node -> builder.append("[").append(node.getLat()).append(",").append(node.getLon()).append("],"));
-        return builder.append("]").toString();
+        logger.info("It took {} ms to generate the complete list of points.", (System.currentTimeMillis() - startTime));
+        return new DijkstraResult(path, distance, timeInSeconds);
     }
 
 
     private boolean addNodesFromTargetToNextCrossing(List<Node> path, Node startCrossing, Node target) {
         if (startCrossing.isCrossing() && !this.crossingStarts.containsKey((int) target.getId())) {
-            // TODO why this branch?
             return false;
         }
 
         // retrieve the first node of the way between the final target crossing to the target
         Node startNode = null;
-        if (this.crossingStarts.containsKey((int) target.getId())) { // TODO USE TARGET ???
+        if (this.crossingStarts.containsKey((int) target.getId())) {
             startNode = this.nodes[this.crossingStarts.get((int) target.getId())];
             // don't use crossings in this case as they have > 1 neighbours to start with...
             if (startNode.equals(startCrossing) || startNode.equals(target)) {

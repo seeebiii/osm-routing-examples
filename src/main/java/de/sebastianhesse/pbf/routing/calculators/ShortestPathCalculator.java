@@ -22,15 +22,12 @@ public class ShortestPathCalculator extends AbstractPathCalculator {
     @Override
     public Optional<CalculationResult> checkNeighbourAndCosts(Node node, Edge edge, Node crossingNode) {
         int targetNodeId = crossingNode == null ? edge.getTargetNode() : (int) crossingNode.getId();
-        double calcDistanceToNeighbour = getExistingWeight((int) node.getId());
-        if (crossingNode == null) {
-            calcDistanceToNeighbour += edge.getDistance();
-        } else {
-            // if we're using a shortcut, we have to calc the distance on the fly
-            calcDistanceToNeighbour += GraphUtil.getDistance(node, crossingNode);
-        }
+        // if we're using a shortcut, we have to calc the distance on the fly
+        double distance = crossingNode == null ? edge.getDistance() : GraphUtil.getDistance(node, crossingNode);
+        double calcDistanceToNeighbour = getExistingWeight((int) node.getId()) + distance;
         if (getExistingWeight(targetNodeId) > calcDistanceToNeighbour) {
-            return Optional.of(new CalculationResult(targetNodeId, calcDistanceToNeighbour, calcDistanceToNeighbour, calcDistanceToNeighbour / edge.getSpeed()));
+            return Optional.of(new CalculationResult(targetNodeId, calcDistanceToNeighbour, distance,
+                    distance / getSpeedInMeterPerSeconds(edge)));
         }
         return Optional.empty();
     }

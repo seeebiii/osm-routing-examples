@@ -130,7 +130,7 @@ public class OsmMapViewer extends JFrame implements JMapViewerEventListener {
             dijkstra.start();
             dijkstra.join();
 
-            List<Node> shortestPath = dijkstra.retrieveShortestPath();
+            List<Node> shortestPath = dijkstra.retrieveShortestPath().path;
 
             Layer routeLayer = new Layer("From " + source.getId() + " to " + target.getId());
             for (Node pathNode : shortestPath) {

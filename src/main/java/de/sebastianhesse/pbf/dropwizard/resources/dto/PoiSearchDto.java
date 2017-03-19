@@ -9,10 +9,10 @@ import de.sebastianhesse.pbf.storage.Node;
 public class PoiSearchDto {
 
     public Node startPoint;
-    public LatLngList poiList;
+    public SingleRouteDto poiList;
 
 
-    public PoiSearchDto(Node startPoint, LatLngList poiList) {
+    public PoiSearchDto(Node startPoint, SingleRouteDto poiList) {
         this.startPoint = startPoint;
         this.poiList = poiList;
     }

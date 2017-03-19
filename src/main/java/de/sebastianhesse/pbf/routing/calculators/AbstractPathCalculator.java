@@ -43,4 +43,13 @@ public abstract class AbstractPathCalculator implements PathCalculator {
 
 
     protected abstract Optional<CalculationResult> checkNeighbourAndCosts(Node node, Edge edge, Node crossingNode);
+
+
+    /**
+     * @param edge current edge to check
+     * @return the edge speed in meter per seconds
+     */
+    protected double getSpeedInMeterPerSeconds(Edge edge) {
+        return edge.getSpeed() / 3.6;
+    }
 }

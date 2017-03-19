@@ -5,7 +5,6 @@ import de.sebastianhesse.pbf.util.GraphUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,20 +12,21 @@ import java.util.stream.Collectors;
 /**
  * DTO to return list of points for a certain path calculated by {@link de.sebastianhesse.pbf.routing.Dijkstra}.
  */
-public class LatLngList {
+public class SingleRouteDto {
 
-    private static final Logger logger = LoggerFactory.getLogger(LatLngList.class);
+    private static final Logger logger = LoggerFactory.getLogger(SingleRouteDto.class);
 
     public List<Double[]> points;
     public double distance = 0;
+    public double timeInSeconds = 0;
 
 
-    public LatLngList(List<Node> nodes) {
+    public SingleRouteDto(List<Node> nodes) {
         long startTime = System.currentTimeMillis();
 
         this.points = nodes.stream()
                 .map(node -> new Double[] {node.getLat(), node.getLon(), Long.valueOf(node.getId()).doubleValue()})
-                .collect(Collectors.toCollection(ArrayList::new));
+                .collect(Collectors.toList());
 
         if (this.points.size() >= 2) {
             Double[] last = this.points.get(0);
@@ -36,7 +36,14 @@ public class LatLngList {
                 last = current;
             }
         }
+    }
 
-        logger.info("It took {} ms to build the response object.", (System.currentTimeMillis() - startTime));
+
+    public SingleRouteDto(List<Node> nodes, double distance, double timeInSeconds) {
+        this.points = nodes.stream()
+                .map(node -> new Double[] {node.getLat(), node.getLon(), Long.valueOf(node.getId()).doubleValue()})
+                .collect(Collectors.toList());
+        this.distance = distance;
+        this.timeInSeconds = timeInSeconds;
     }
 }

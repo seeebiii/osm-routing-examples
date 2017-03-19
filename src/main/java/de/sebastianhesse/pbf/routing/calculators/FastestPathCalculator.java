@@ -22,10 +22,10 @@ public class FastestPathCalculator extends AbstractPathCalculator {
 
     @Override
     public Optional<CalculationResult> checkNeighbourAndCosts(Node node, Edge edge, Node crossingNode) {
-        if (edge.getSpeed() > 0) {
+        if (getSpeedInMeterPerSeconds(edge) > 0) {
             int targetNodeId = crossingNode == null ? edge.getTargetNode() : (int) crossingNode.getId();
             double distance = crossingNode == null ? edge.getDistance() : GraphUtil.getDistance(node, crossingNode);
-            double distanceTime = distance / edge.getSpeed();
+            double distanceTime = distance / getSpeedInMeterPerSeconds(edge);
             double weightToNeighbour = getExistingWeight((int) node.getId()) + distanceTime;
             if (getExistingWeight(targetNodeId) > weightToNeighbour) {
                 return Optional.of(new CalculationResult(targetNodeId, weightToNeighbour, distance, distanceTime));

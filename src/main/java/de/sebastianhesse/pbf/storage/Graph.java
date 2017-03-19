@@ -322,6 +322,15 @@ public class Graph {
     }
 
 
+    public Optional<Node> findClosestNode(Node node) {
+        if (node.getId() > -1) {
+            return findClosestNode((int) node.getId(), node.getLat(), node.getLon());
+        } else {
+            return findClosestNode(node.getLat(), node.getLon());
+        }
+    }
+
+
     public Optional<Node> findClosestNode(int id, double lat, double lon) {
         if (id > -1 && id < this.nodes.length) {
             return Optional.ofNullable(this.nodes[id]);

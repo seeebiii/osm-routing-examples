@@ -1,10 +1,11 @@
 package de.sebastianhesse.pbf.dropwizard.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import de.sebastianhesse.pbf.dropwizard.resources.dto.LatLngList;
+import de.sebastianhesse.pbf.dropwizard.resources.dto.SingleRouteDto;
 import de.sebastianhesse.pbf.reader.Accessor;
 import de.sebastianhesse.pbf.routing.Dijkstra;
 import de.sebastianhesse.pbf.routing.DijkstraOptions;
+import de.sebastianhesse.pbf.routing.DijkstraResult;
 import de.sebastianhesse.pbf.routing.calculators.CalculationType;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
@@ -56,7 +57,7 @@ public class RoutingResource {
                 }
             }
 
-            return Response.ok(new LatLngList(nodes)).build();
+            return Response.ok(new SingleRouteDto(nodes)).build();
         }
         return Response.status(Response.Status.BAD_REQUEST).build();
     }
@@ -71,7 +72,7 @@ public class RoutingResource {
      * @param lon2 latitude for point 2
      * @param vehicle vehicle type
      * @param mode calculation mode
-     * @return 200 if a path could be found; response body contains list of points, see {@link LatLngList}
+     * @return 200 if a path could be found; response body contains list of points, see {@link SingleRouteDto}
      *         409 if points can not be found in graph OR if there is now way between them
      *         500 if something unexpected happens while retrieving the path
      * @see DijkstraOptions for vehicle and mode
@@ -123,17 +124,18 @@ public class RoutingResource {
 
     private Response getShortestPathWithDijkstra(DijkstraOptions dijkstraOptions, Node startNode, Node endNode, long startTime) {
         Dijkstra dijkstra = new Dijkstra(graph, startNode, endNode, dijkstraOptions);
-        dijkstra.run();
+        dijkstra.start();
         try {
             dijkstra.join();
-            List<Node> nodes = dijkstra.retrieveShortestPath();
+            DijkstraResult dijkstraResult = dijkstra.retrieveShortestPath();
+            List<Node> nodes = dijkstraResult.path;
             if (nodes.size() == 0) {
                 return Response.status(Response.Status.CONFLICT)
                         .entity("Could not find an existent way between given points.")
                         .build();
             } else {
                 logger.info("Complete time for request: {}", (System.currentTimeMillis() - startTime));
-                return Response.ok(new LatLngList(nodes)).build();
+                return Response.ok(new SingleRouteDto(nodes, dijkstraResult.distance, dijkstraResult.timeInSeconds)).build();
             }
         } catch (InterruptedException e) {
             logger.error("", e);
