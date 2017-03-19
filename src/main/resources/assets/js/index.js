@@ -186,6 +186,11 @@ $(document).ready(function () {
       map.fitBounds(polyline.getBounds());
 
       $('#estimatedDistance').val(success.distance);
+      $('#estimatedDistanceKm').val(Math.round(success.distance * 100) / 100);
+      var seconds = success.timeInSeconds;
+      var date = new Date(null);
+      date.setSeconds(seconds);
+      $('#estimatedDuration').val(date.toISOString().substr(11, 8));
     }).fail(function (error) {
       $('#error').html('Something went wrong. Error message: ' + error.responseText).show();
       console.error('Error occurred while retrieving route between two points.', error);
