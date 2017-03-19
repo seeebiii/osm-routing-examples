@@ -106,6 +106,26 @@ button[name="route_clear"] {
   opacity: 0.5;
 }
 
+#poiTable {
+  margin-top: 15px;
+  height: 200px;
+  overflow-y: scroll;
+  display: none;
+}
+
+#poiTable table {
+  width: 100%;
+}
+
+#poiTable table thead th:nth-child(0) {
+  width: 20%;
+}
+
+#poiTable table tbody td {
+  text-align: center;
+  cursor: pointer;
+}
+
 .navPart {
   padding: 10px;
 }

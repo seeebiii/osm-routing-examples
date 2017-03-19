@@ -30,10 +30,9 @@
         <p>Find POIs around you.</p>
         <ol>
           <li>Click into the map.</li>
-          <li>Select a POI type (by selecting a key and value).</li>
-          <li>Select a maximum distance.</li>
+          <li>Select a POI type (key + value) and max. distance.</li>
           <li>Click 'Search'.</li>
-          <li>Route to a gas station by clicking on it.</li>
+          <li>Route to a POI by clicking on it.</li>
         </ol>
         <form>
           <div class="form-group">
@@ -55,6 +54,9 @@
           </div>
           <button type="button" name="search">Search</button>
           <button type="button" name="route_clear">Clear</button>
+          <div id="poiTable">
+            <!-- might be filled by jquery -->
+          </div>
         </form>
       </div>
       <div id="routing" class="navPart">

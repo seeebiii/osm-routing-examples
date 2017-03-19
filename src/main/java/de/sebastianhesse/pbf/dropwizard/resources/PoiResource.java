@@ -1,7 +1,6 @@
 package de.sebastianhesse.pbf.dropwizard.resources;
 
 import de.sebastianhesse.pbf.dropwizard.resources.dto.PoiSearchDto;
-import de.sebastianhesse.pbf.dropwizard.resources.dto.SingleRouteDto;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -42,7 +41,7 @@ public class PoiResource {
         Optional<Node> source = this.graph.findClosestNode(pointId, lat, lon);
         if (source.isPresent()) {
             List<Node> pois = graph.getPoisAround(source.get(), maxDistance, new ImmutablePair<>(typeKey, typeValue));
-            return Response.ok(new PoiSearchDto(source.get(), new SingleRouteDto(pois))).build();
+            return Response.ok(new PoiSearchDto(source.get(), pois)).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }

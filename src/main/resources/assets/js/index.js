@@ -114,20 +114,28 @@ $(document).ready(function () {
     $('#route_to').val('');
   });
 
+  $('#poiTable').on('click', 'table tbody tr', function (e) {
+    var elem = $(e.target).parent('tr');
+    routeToPoi({
+      latlng: points[parseInt(elem.attr('data-idx')) + 1]
+    });
+  });
+
   // helper functions
   function getPois() {
     removePolyline();
     removePointsExceptFirst();
     removeMarkersExceptFirst();
+    $('#poiTable').empty().hide();
     var distance = $('#maxDistance').val();
     sendRequestToPois(points[0], distance);
   }
 
   function sendRequestToPois(startPoint, distance) {
     $('#error').hide();
-    var url = '/api/pois?lat=' + startPoint[0] + '&lon=' + startPoint[1] + '&maxDistance=' + distance;
-    if (startPoint.length > 2) {
-      url += '&pid=' + startPoint[2];
+    var url = '/api/pois?lat=' + startPoint.lat + '&lon=' + startPoint.lng + '&maxDistance=' + distance;
+    if (startPoint.id) {
+      url += '&pid=' + startPoint.id;
     }
     url += '&typeKey=' + $('#typeKey').val();
     url += '&typeValue=' + $('#typeValue').val();
@@ -136,16 +144,20 @@ $(document).ready(function () {
       url: url,
       type: 'GET'
     }).done(function (success) {
-      if (success && success.poiList.points) {
-        if (success.poiList.points.length == 0) {
+      if (success && success.poiList) {
+        if (success.poiList.length == 0) {
           $('#error').html('Could not find any POIs nearby. Please increase the distance or choose another POI type.').show();
         } else {
           removePoints();
           removeMarkers();
           addPointToMap(success.startPoint, {icon: greenIcon});
-          for (var i = 0; i < success.poiList.points.length; i++) {
-            addPointToMap(success.poiList.points[i], {clickHandler: routeToPoi});
+          var table = '<table><thead><th>#</th><th>Linear Distance (m)</th></thead><tbody>';
+          for (var i = 0; i < success.poiList.length; i++) {
+            addPointToMap(success.poiList[i], {clickHandler: routeToPoi});
+            table += '<tr data-idx="' + i + '"><td>' + i + '</td><td>' + success.poiList[i][3] + '</td></tr>';
           }
+          table += '</tbody></table>';
+          $('#poiTable').show().html(table);
           map.fitBounds(points);
         }
       }
@@ -162,12 +174,13 @@ $(document).ready(function () {
     // do actual routing stuff
     var startPoint = points[0];
     var filtered = points.filter(function (value) {
-      return value[0] == e.latlng.lat && value[1] == e.latlng.lng;
+      return (value[0] == e.latlng.lat && value[1] == e.latlng.lng) || (value.lat == e.latlng.lat && value.lng == e.latlng.lng);
     });
     var endPoint = filtered[0];
     removePolyline();
     removeMarkersExceptFirst();
     removePointsExceptFirst();
+    $('#poiTable').empty().hide();
     addPointToMap(endPoint);
     sendRequest(startPoint, endPoint);
   }
@@ -198,18 +211,33 @@ $(document).ready(function () {
   }
 
   function getRequestUrl(startPoint, endPoint) {
-    var params = '?lat1=' + startPoint[0] + '&lon1=' + startPoint[1] + '&lat2=' + endPoint[0] + '&lon2=' + endPoint[1];
-    if (startPoint.length > 2) {
-      params += '&pid1=' + startPoint[2];
+    var start = getPointData(startPoint);
+    var end = getPointData(endPoint);
+    var params = '?lat1=' + start.lat + '&lon1=' + (start.lng || start.lon) + '&lat2=' + end.lat + '&lon2=' + (end.lng || end.lon);
+    if (start.id) {
+      params += '&pid1=' + start.id;
     }
-    if (endPoint.length > 2) {
-      params += '&pid2=' + endPoint[2];
+    if (end.id) {
+      params += '&pid2=' + end.id;
     }
     var vehicle = $('#vehicle').val();
     params += '&vehicle=' + vehicle;
     var mode = $('#mode').val();
     params += '&mode=' + mode;
     return '/api/route' + params;
+  }
+
+  function getPointData(point) {
+    var isArray = Array.isArray(point);
+    if (isArray) {
+      return {
+        lat: point[0],
+        lng: point[1],
+        id: point.length > 2 ? point[2] : -1
+      };
+    } else {
+      return point;
+    }
   }
 
   function resetMap() {
@@ -258,19 +286,32 @@ $(document).ready(function () {
 
   function addPointToMap(point, options) {
     options = options || {};
+    var markerPoint = null;
 
     if (Array.isArray(point)) {
-      points.push(point);
+      markerPoint = {
+        lat: point[0],
+        lng: point[1],
+        id: point.length > 2 ? point[2] : -1,
+        estimatedDistance: point.length > 3 ? point[3] : 0
+      };
+      points.push(markerPoint);
     } else {
-      points.push([point.lat, point.lng || point.lon, point.id || -1]);
+      markerPoint = {
+        lat: point.lat,
+        lng: point.lng || point.lon,
+        id: point.id || -1,
+        estimatedDistance: point.estimatedDistance || -1
+      };
+      points.push(markerPoint);
     }
 
     var marker = null;
 
     if (options.icon) {
-      marker = L.marker(point, {icon: options.icon});
+      marker = L.marker(markerPoint, {icon: options.icon});
     } else {
-      marker = L.marker(point);
+      marker = L.marker(markerPoint);
     }
 
     if (options.clickHandler) {
@@ -281,8 +322,10 @@ $(document).ready(function () {
   }
 
   function pointToString(point) {
-    if (!!point && point.length >= 2) {
+    if (!!point && Array.isArray(point) && point.length >= 2) {
       return point[0] + ', ' + point[1];
+    } else if (!!point && point.lat && (point.lng || point.lon)) {
+      return point.lat + ', ' + (point.lng || point.lon);
     } else {
       return 'Missing point data.';
     }
