@@ -186,7 +186,7 @@ $(document).ready(function () {
       map.fitBounds(polyline.getBounds());
 
       $('#estimatedDistance').val(success.distance);
-      $('#estimatedDistanceKm').val(Math.round(success.distance * 100) / 100);
+      $('#estimatedDistanceKm').val(Math.round((success.distance / 1000) * 100) / 100);
       var seconds = success.timeInSeconds;
       var date = new Date(null);
       date.setSeconds(seconds);
