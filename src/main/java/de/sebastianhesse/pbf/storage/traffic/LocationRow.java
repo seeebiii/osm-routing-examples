@@ -1,9 +1,14 @@
 package de.sebastianhesse.pbf.storage.traffic;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.Locale;
 
 
 /**
@@ -82,6 +87,41 @@ public class LocationRow {
     }
 
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        LocationRow that = (LocationRow) o;
+
+        return new EqualsBuilder()
+                .append(id, that.id)
+                .isEquals();
+    }
+
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(id)
+                .toHashCode();
+    }
+
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("id", id)
+                .append("type", type)
+                .append("negOffset", negOffset)
+                .append("posOffset", posOffset)
+                .append("lat", lat)
+                .append("lon", lon)
+                .toString();
+    }
+
+
     public static class LocationRowBuilder {
 
         private int id;
@@ -110,13 +150,11 @@ public class LocationRow {
 
 
         public LocationRowBuilder addLatLon(String lat, String lon) {
-            // make sure to first try to parse the string in the format of the current instance.
-            // e.g. Germany: 4,0
-            // but America: 4.0
+            // make sure to import the numbers in German format!
             if (StringUtils.isNoneBlank(lat, lon)) {
                 try {
-                    this.lat = NumberFormat.getNumberInstance().parse(lat).doubleValue();
-                    this.lon = NumberFormat.getNumberInstance().parse(lon).doubleValue();
+                    this.lat = DecimalFormat.getNumberInstance(Locale.GERMANY).parse(lat).doubleValue();
+                    this.lon = NumberFormat.getNumberInstance(Locale.GERMANY).parse(lon).doubleValue();
                 } catch (ParseException e) {
                     try {
                         this.lat = Double.valueOf(lat);

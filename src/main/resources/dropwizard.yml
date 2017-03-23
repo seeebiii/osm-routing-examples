@@ -7,3 +7,9 @@ server:
     port: 8081
   rootPath: /api/
 readerStrategy: SIMPLE
+logging:
+  level: INFO
+  loggers:
+    "de.sebastianhesse": INFO
+  appenders:
+    - type: console

@@ -1,5 +1,10 @@
 package de.sebastianhesse.pbf.storage.traffic;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+
 /**
  * Holds information about traffic related events, e.g. roadworks or a crash. Instances of this class should
  * have a {@link #weight} between 0 and 1.0 (both inclusive).
@@ -50,5 +55,40 @@ public class EventRow {
 
     public double getWeight() {
         return weight;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+
+        if (o == null || getClass() != o.getClass()) return false;
+
+        EventRow eventRow = (EventRow) o;
+
+        return new EqualsBuilder()
+                .append(id, eventRow.id)
+                .append(weight, eventRow.weight)
+                .isEquals();
+    }
+
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37)
+                .append(id)
+                .append(weight)
+                .toHashCode();
+    }
+
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("id", id)
+                .append("text", text)
+                .append("textDe", textDe)
+                .append("weight", weight)
+                .toString();
     }
 }

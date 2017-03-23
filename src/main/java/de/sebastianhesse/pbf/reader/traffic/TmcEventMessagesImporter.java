@@ -80,7 +80,7 @@ public class TmcEventMessagesImporter {
             }
 
             logger.debug("Saved {} file names from folder. Took {} ms to save.",
-                    hourFileMapping.size(), (start - System.currentTimeMillis()));
+                    hourFileMapping.size(), (System.currentTimeMillis() - start));
         } catch (IOException e) {
             logger.error("Error occurred while reading TMC message file or writing back optimized *.cdat file.", e);
         }
@@ -180,7 +180,8 @@ public class TmcEventMessagesImporter {
             }
         }
 
-        logger.debug("Took {} ms to load the data from file {}.", (start - System.currentTimeMillis()), file.getName());
+        logger.debug("Took {} ms to load the {} TMC events from file {}.", (System.currentTimeMillis() - start),
+                eventList.size(), file.getName());
 
         return eventList;
     }

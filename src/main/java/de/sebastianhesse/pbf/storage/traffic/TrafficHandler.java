@@ -1,6 +1,7 @@
 package de.sebastianhesse.pbf.storage.traffic;
 
 
+import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -51,6 +52,7 @@ public class TrafficHandler {
      * @throws IOException in case an error occurred during reading the traffic data file
      */
     public List<Pair<Node, Node>> updateTraffic(short hour) throws IOException {
+        logger.debug("Updating traffic data for hour {}", hour);
         // first, remove existing traffic data!
         removeTrafficData();
 
@@ -60,6 +62,7 @@ public class TrafficHandler {
 
         // for each event, find the related event type and location.
         events.forEach(event -> {
+            logger.debug("Current event: {}", event);
             List<LocationRow> affectedLocations = new ArrayList<>();
             try {
                 EventRow eventRow = eventList.get(event.getEventCode());
@@ -68,6 +71,7 @@ public class TrafficHandler {
                     affectedLocations.add(locationList.get(event.getLocationCode()));
                     addAffectedLocationRows(affectedLocations, event.getExtend(), event.isDirection());
 
+                    logger.debug("EventRow: {}. Found {} affected locations.", eventRow, affectedLocations.size());
                     // now search for the location in our graph and update the connected edges accordingly
                     handleAffectedLocations(updatedWays, affectedLocations, eventRow);
                 }
@@ -81,6 +85,8 @@ public class TrafficHandler {
         this.lastHour = hour;
         this.lastUpdatedWays = updatedWays;
 
+        logger.debug("Updated {} ways for hour {}.", lastUpdatedWays.size(), lastHour);
+
         return updatedWays;
     }
 
@@ -88,10 +94,13 @@ public class TrafficHandler {
     private void handleAffectedLocations(final List<Pair<Node, Node>> updatedWays, final List<LocationRow> affectedLocations,
                                          final EventRow eventRow) {
         for (LocationRow row : affectedLocations) {
+            logger.debug("Using location row {}.", row);
             if (row.getLat() > 0 && row.getLon() > 0) {
                 Optional<Node> closestNode = graph.findClosestNode(row.getLat(), row.getLon());
                 closestNode.ifPresent(node -> {
-                    graph.getNeighboursOfNode(node).forEach(edge -> {
+                    List<Edge> neighboursOfNode = graph.getNeighboursOfNode(node);
+                    logger.debug("Found node {} with {} neighbours in graph.", node, neighboursOfNode.size());
+                    neighboursOfNode.forEach(edge -> {
                         edge.setAdditionalWeight(eventRow.getWeight());
                         updatedWays.add(new ImmutablePair<>(node, graph.getNodes()[edge.getTargetNode()]));
                     });
