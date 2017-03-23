@@ -88,7 +88,7 @@ button[name="route_clear"] {
   margin: 20px 0px;
 }
 
-.form-group select, .form-group input {
+.form-group > select, .form-group > input {
   border: 1px solid #333;
   background: #00B796;
   color: #fff;

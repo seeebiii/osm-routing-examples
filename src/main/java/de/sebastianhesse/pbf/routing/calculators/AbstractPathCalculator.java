@@ -34,7 +34,8 @@ public abstract class AbstractPathCalculator implements PathCalculator {
 
     @Override
     public Optional<CalculationResult> calculateCostsToNeighbour(Node node, Edge edge, Node crossingNode) {
-        if (wayAccessor.canAccessWay(edge)) {
+        // just allow this way if the edge can be accessed and it's not closed
+        if (wayAccessor.canAccessWay(edge) && edge.getAdditionalWeight() < 1.0) {
             return checkNeighbourAndCosts(node, edge, crossingNode);
         } else {
             return Optional.empty();

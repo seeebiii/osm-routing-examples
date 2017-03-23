@@ -41,8 +41,19 @@ The *.yml and *.osm.pbf file must be somewhere on the local system.
 Take a look at the [example *.yml file](/src/main/resources/dropwizard.yml).
 ```
 $ mvn clean package
-$ java -jar target/osm-routing-examples-1.1.0.jar server /path/to/config.yml /path/to/osm/file
+$ java -jar target/osm-routing-examples-1.2.0.jar server /path/to/config.yml /path/to/osm/file
 ```
+
+#### TMC Support
+Optionally you can start the server by providing some TMC data. For this you need the a Location Code List
+(e.g. for Germany, you can request one here:
+https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-LCL/location-code-list_node.html) and an event list
+(most likely delivered together with the Location Code List). You also need some TMC data files. Then you can
+ start the server with the following arguments:
+ 
+```
+$ java -jar target/osm-routing-examples-1.2.0.jar server config.yml osm_data.osm.pbf lcl.csv event_list.csv /path/to/tmc/directory
+``` 
 
 A web frontend will be served from:
 ```
@@ -58,9 +69,29 @@ mode: fastest, shortest
 GET /api/route?lat1=...&lon1=...&lat2=...&lon2=...&vehicle=car&mode=fastest
 
 
-### Get all gas stations around a given position ###
+### Get certain POIs around a given position ###
+pid: if known, the id of the position/node, otherwise just -1
 maxDistance: maximum distance to search for gas stations around the position
-GET /api/gasstations?lat=...&lon=...&maxDistance=20
+typeKey: key of a Nominatim category, e.g. Amenity
+typeValue: value of a Nominatim category, e.g. Fuel
+GET /api/pois?lat=...&lon=...&pid=...&maxDistance=20&typeKey=...&typeValue=...
+
+
+### Request all available POI types ###
+OPTIONS /api/pois
+
+
+### Get last updated ways where TMC traffic events have fired for certain hour ###
+GET /api/traffic
+
+
+### Update the routing graph with traffic data for a certain hour ###
+PUT /api/traffic/{hour}
+
+
+### Remove all traffic data from the routing graph ###
+DELETE /api/traffic
+
 
 ### Get meta information about the OSM backend ###
 GET /api/meta
@@ -72,15 +103,11 @@ GET /api/meta
 3. Run [Gulp](http://gulpjs.com/): ``gulp watch``
 4. Start coding!
 
-## TODO
-- Add route information like estimated distance and duration
-- Show gas station info popup with name, address, etc.
-- Implement localization
 
 ## License
 MIT License
 
-Copyright (c) 2017 Sebastian Hesse
+Copyright (c) 2017 [Sebastian Hesse](https://www.sebastianhesse.de/)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

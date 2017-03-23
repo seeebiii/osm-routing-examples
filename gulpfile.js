@@ -18,8 +18,13 @@ gulp.task('js', function () {
     .pipe(gulp.dest(targetPath + '/js'))
 });
 
-gulp.task('default', ['html', 'css', 'js']);
+gulp.task('img', function () {
+  return gulp.src(basePath + 'img/*.gif')
+    .pipe(gulp.dest(targetPath + '/img'))
+});
+
+gulp.task('default', ['html', 'css', 'js', 'img']);
 
 gulp.task('watch', function () {
-  return gulp.watch(basePath + '**', ['html','css', 'js']);
+  return gulp.watch(basePath + '**', ['html','css', 'js', 'img']);
 });

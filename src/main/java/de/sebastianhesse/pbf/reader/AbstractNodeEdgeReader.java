@@ -5,9 +5,16 @@ import com.graphhopper.reader.ReaderNode;
 import com.graphhopper.reader.ReaderWay;
 import com.graphhopper.reader.osm.OSMInputFile;
 import de.sebastianhesse.pbf.reader.Way.WayBuilder;
+import de.sebastianhesse.pbf.reader.traffic.EventListImporter;
+import de.sebastianhesse.pbf.reader.traffic.LocationListImporter;
+import de.sebastianhesse.pbf.reader.traffic.TmcEventMessagesImporter;
 import de.sebastianhesse.pbf.storage.Edge;
 import de.sebastianhesse.pbf.storage.Graph;
 import de.sebastianhesse.pbf.storage.Node;
+import de.sebastianhesse.pbf.storage.traffic.EventList;
+import de.sebastianhesse.pbf.storage.traffic.LocationList;
+import de.sebastianhesse.pbf.storage.traffic.TmcMessageMap;
+import de.sebastianhesse.pbf.storage.traffic.TrafficHandler;
 import de.sebastianhesse.pbf.util.GraphUtil;
 import gnu.trove.list.TLongList;
 import gnu.trove.map.TLongIntMap;
@@ -35,12 +42,27 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
     protected List<Object> ways = new ArrayList<>();
     protected ReaderWayValidator validator = new ReaderWayValidator();
     protected Graph graph;
+    protected TrafficHandler trafficHandler;
     protected File osmFile = null;
+    protected String locationListPath = null;
+    protected String eventListPath = null;
+    protected String tmcDataDirectory = null;
     protected Map<String, Set<String>> poiTypes;
+
+
+    public AbstractNodeEdgeReader(String osmFile, String locationList, String eventList, String tmcDataDirectory) {
+        this(osmFile);
+        this.locationListPath = locationList;
+        this.eventListPath = eventList;
+        this.tmcDataDirectory = tmcDataDirectory;
+    }
 
 
     public AbstractNodeEdgeReader(String osmFile) {
         this.osmFile = new File(osmFile);
+        if (!this.osmFile.exists()) {
+            throw new IllegalArgumentException("You must provide an existing file containing OSM data.");
+        }
     }
 
 
@@ -49,6 +71,14 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
             throw new IllegalStateException("Can't access the graph if it is not built. First import some data!");
         }
         return this.graph;
+    }
+
+
+    public TrafficHandler getTrafficHandler() {
+        if (this.trafficHandler == null) {
+            throw new IllegalStateException("Can't access the traffic map if it is not built. First import some data!");
+        }
+        return this.trafficHandler;
     }
 
 
@@ -62,9 +92,11 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
      */
     public NodeEdgeReader importData() throws Exception {
         if (this.osmFile != null && this.osmFile.exists()) {
-            logger.info("--------------------------- PREPARE IMPORT -------------");
+            logger.info("--------------------------- PREPARE IMPORT -------------------");
             prepareImport();
-            logger.info("--------------------------- START TO IMPORT DATA -------------");
+            logger.info("--------------------------- PREPARE TRAFFIC HANDLING ---------");
+            importTrafficData();
+            logger.info("--------------------------- START TO IMPORT OSM DATA ---------");
             long start = System.currentTimeMillis();
 
             logger.info("--------------------------- READ WAYS ------------------------");
@@ -75,7 +107,7 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
             readNodesOfWays();
             logger.info("--------------------------- SORT NODES -----------------------");
             sortNodes();
-            logger.info("--------------------------- READ POIS ----------------");
+            logger.info("--------------------------- READ POIS ------------------------");
             readPois();
             logger.info("--------------------------- READ EDGES -----------------------");
             readEdgesOfWays();
@@ -91,6 +123,24 @@ public abstract class AbstractNodeEdgeReader implements NodeEdgeReader {
         }
 
         return this;
+    }
+
+
+    private void importTrafficData() {
+        TmcEventMessagesImporter tmcEventMessagesImporter = new TmcEventMessagesImporter(this.tmcDataDirectory);
+        TmcMessageMap tmcMessageMap = new TmcMessageMap(tmcEventMessagesImporter);
+
+        LocationListImporter locationListImporter = new LocationListImporter(this.locationListPath);
+        LocationList locationList = locationListImporter.importLocationList();
+        logger.debug("Finished import: imported {} entries for location list.", locationList.size());
+
+        EventListImporter eventListImporter = new EventListImporter(this.eventListPath);
+        EventList eventList = eventListImporter.importEventList();
+        logger.debug("Finished import: imported {} entries for event list.", eventList.size());
+
+        this.trafficHandler = new TrafficHandler(locationList, eventList, tmcMessageMap);
+
+        logger.info("Finished preparation: imported TMC event and location data.");
     }
 
 

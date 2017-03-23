@@ -98,7 +98,7 @@ public class Dijkstra extends BaseDijkstra {
 
     private void findNextTargetCrossings() {
         if (!target.isCrossing()) {
-            List<Edge> neighbours = this.graph.getNeighboursOfNode(this.target, new TLongHashSet());
+            List<Edge> neighbours = this.graph.getNeighboursOfNode(this.target);
             for (Edge edge : neighbours) {
                 int nextCrossing = edge.getNextCrossing();
                 if (nextCrossing > -1) {

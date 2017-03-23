@@ -134,7 +134,7 @@ public class RoutingResource {
                         .entity("Could not find an existent way between given points.")
                         .build();
             } else {
-                logger.info("Complete time for request: {}", (System.currentTimeMillis() - startTime));
+                logger.info("Complete time for request: {} ms", (System.currentTimeMillis() - startTime));
                 return Response.ok(new SingleRouteDto(nodes, dijkstraResult.distance, dijkstraResult.timeInSeconds)).build();
             }
         } catch (InterruptedException e) {

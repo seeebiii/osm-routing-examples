@@ -263,6 +263,11 @@ public class Graph {
     }
 
 
+    public List<Edge> getNeighboursOfNode(Node node) {
+        return this.getNeighboursOfNode(node, new TLongHashSet());
+    }
+
+
     public List<Edge> getNeighboursOfNode(Node node, TLongSet settled) {
         int edgeOffset = node.getOffsetPointer();
 
@@ -306,7 +311,7 @@ public class Graph {
         Edge edge = this.edges[offset];
         while (edge.getTargetNode() != (int) target.getId()) {
             Node n = this.nodes[edge.getTargetNode()];
-            List<Edge> neighbours = this.getNeighboursOfNode(n, new TLongHashSet());
+            List<Edge> neighbours = this.getNeighboursOfNode(n);
             if (neighbours.size() > 1) {
                 break;
             }
@@ -344,7 +349,7 @@ public class Graph {
         try {
             List<GridOffset> cells = getGridCellsAround(lat, lon);
             Node searchNode = new Node(lat, lon);
-            double distance = Double.MAX_VALUE;
+            double distance = 1000;
             Node selectedNode = null;
 
             // search in all grids around the searchNode

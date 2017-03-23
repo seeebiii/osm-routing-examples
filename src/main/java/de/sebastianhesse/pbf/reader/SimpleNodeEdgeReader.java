@@ -20,6 +20,11 @@ public class SimpleNodeEdgeReader extends AbstractNodeEdgeReader {
     protected int edgeCounter = 0;
 
 
+    public SimpleNodeEdgeReader(String osmFile, String locationListPath, String eventListPath, String tmcDataDirectory) {
+        super(osmFile, locationListPath, eventListPath, tmcDataDirectory);
+    }
+
+
     public SimpleNodeEdgeReader(String osmFile) {
         super(osmFile);
     }

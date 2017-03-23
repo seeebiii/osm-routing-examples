@@ -22,8 +22,6 @@ public class SingleRouteDto {
 
 
     public SingleRouteDto(List<Node> nodes) {
-        long startTime = System.currentTimeMillis();
-
         this.points = nodes.stream()
                 .map(node -> new Double[] {node.getLat(), node.getLon(), Long.valueOf(node.getId()).doubleValue()})
                 .collect(Collectors.toList());

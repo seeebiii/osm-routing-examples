@@ -20,6 +20,7 @@ public class Edge {
     private int nextCrossing;
     private double distance = 0;
     private short speed = 0;
+    private double additionalWeight = 0;
     // allowed: car, pedestrian
     private boolean[] access = new boolean[] {false, false};
 
@@ -74,6 +75,16 @@ public class Edge {
 
     public void setSpeed(short speed) {
         this.speed = speed;
+    }
+
+
+    public double getAdditionalWeight() {
+        return additionalWeight;
+    }
+
+
+    public void setAdditionalWeight(double additionalWeight) {
+        this.additionalWeight = additionalWeight;
     }
 
 

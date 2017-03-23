@@ -21,6 +21,11 @@ public class OptimizedNodeEdgeReader extends AbstractNodeEdgeReader {
     protected int edgeCounter = 0;
 
 
+    public OptimizedNodeEdgeReader(String osmFile, String locationListPath, String eventListPath, String tmcDataDirectory) {
+        super(osmFile, locationListPath, eventListPath, tmcDataDirectory);
+    }
+
+
     public OptimizedNodeEdgeReader(String osmFile) {
         super(osmFile);
     }

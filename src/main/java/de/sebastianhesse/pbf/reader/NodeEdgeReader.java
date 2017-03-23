@@ -1,6 +1,7 @@
 package de.sebastianhesse.pbf.reader;
 
 import de.sebastianhesse.pbf.storage.Graph;
+import de.sebastianhesse.pbf.storage.traffic.TrafficHandler;
 
 
 /**
@@ -10,6 +11,7 @@ public interface NodeEdgeReader {
 
     /**
      * Imports data, e.g. from a file containing OSM data. The data source must be handled by the implementation.
+     *
      * @return an instance of the implementation containing the imported data
      * @throws Exception if an error occurs, e.g. cannot read file, malformed data, etc.
      */
@@ -19,4 +21,10 @@ public interface NodeEdgeReader {
      * @return a graph containing the imported data, i.e. nodes and edges
      */
     Graph getGraph();
+
+
+    /**
+     * @return a traffic handler containing traffic data and methods to influence the routing graph
+     */
+    TrafficHandler getTrafficHandler();
 }

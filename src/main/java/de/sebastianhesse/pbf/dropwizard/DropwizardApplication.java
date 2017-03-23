@@ -3,13 +3,15 @@ package de.sebastianhesse.pbf.dropwizard;
 import de.sebastianhesse.pbf.dropwizard.healtchecks.GraphHealthCheck;
 import de.sebastianhesse.pbf.dropwizard.healtchecks.StrategyHealthCheck;
 import de.sebastianhesse.pbf.dropwizard.resources.HelloWorldResource;
-import de.sebastianhesse.pbf.dropwizard.resources.PoiResource;
 import de.sebastianhesse.pbf.dropwizard.resources.MetaResource;
+import de.sebastianhesse.pbf.dropwizard.resources.PoiResource;
 import de.sebastianhesse.pbf.dropwizard.resources.RoutingResource;
+import de.sebastianhesse.pbf.dropwizard.resources.TrafficResource;
 import de.sebastianhesse.pbf.reader.NodeEdgeReader;
 import de.sebastianhesse.pbf.reader.OptimizedNodeEdgeReader;
 import de.sebastianhesse.pbf.reader.SimpleNodeEdgeReader;
 import de.sebastianhesse.pbf.storage.Graph;
+import de.sebastianhesse.pbf.storage.traffic.TrafficHandler;
 import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -28,11 +30,16 @@ public class DropwizardApplication extends Application<DropwizardConfiguration> 
     private static final Logger logger = LoggerFactory.getLogger(DropwizardApplication.class);
 
     private String osmFile = "";
+    private String locationListPath = "";
+    private String eventListPath = "";
+    private String tmcDataDirectory = "";
 
 
-    public DropwizardApplication(String osmFile) {
+    public DropwizardApplication(String osmFile, String locationListPath, String eventListPath, String tmcDataDirectory) {
         this.osmFile = osmFile;
-        logger.info("Using file: ", osmFile);
+        this.locationListPath = locationListPath;
+        this.eventListPath = eventListPath;
+        this.tmcDataDirectory = tmcDataDirectory;
     }
 
 
@@ -40,7 +47,10 @@ public class DropwizardApplication extends Application<DropwizardConfiguration> 
         // strip out the osm file path, otherwise Dropwizard complains about an unknown parameter;
         // the unknown parameter could be addressed by adding a custom command, but it's okay for this use case
         String[] argsWithoutOsmFile = Arrays.copyOfRange(args, 0, 2);
-        new DropwizardApplication(args[2]).run(argsWithoutOsmFile);
+        String locationListPath = args.length > 3 ? args[3] : "";
+        String eventListPath = args.length > 4 ? args[4] : "";
+        String tmcDataDirectory = args.length > 5 ? args[5] : "";
+        new DropwizardApplication(args[2], locationListPath, eventListPath, tmcDataDirectory).run(argsWithoutOsmFile);
     }
 
 
@@ -70,10 +80,13 @@ public class DropwizardApplication extends Application<DropwizardConfiguration> 
         // import OSM data and register routing resource
         NodeEdgeReader reader = getNodeEdgeReader(configuration);
         Graph graph = null;
+        TrafficHandler trafficHandler = null;
 
         try {
             reader.importData();
             graph = reader.getGraph();
+            trafficHandler = reader.getTrafficHandler();
+            trafficHandler.setGraph(graph);
         } catch (Exception e) {
             logger.info("Something went wrong while reading OSM data. See error log.");
             logger.error("", e);
@@ -88,6 +101,9 @@ public class DropwizardApplication extends Application<DropwizardConfiguration> 
         final MetaResource metaResource = new MetaResource(configuration, osmFile, graph);
         environment.jersey().register(metaResource);
 
+        final TrafficResource trafficResource = new TrafficResource(trafficHandler);
+        environment.jersey().register(trafficResource);
+
         // health checks
         environment.healthChecks().register("GraphHealthCheck", new GraphHealthCheck(graph));
         environment.healthChecks().register("ReaderStrategyHealthCheck", new StrategyHealthCheck(configuration));
@@ -99,11 +115,11 @@ public class DropwizardApplication extends Application<DropwizardConfiguration> 
 
         switch (configuration.getReaderStrategy()) {
             case OPTIMIZED:
-                reader = new OptimizedNodeEdgeReader(osmFile);
+                reader = new OptimizedNodeEdgeReader(osmFile, locationListPath, eventListPath, tmcDataDirectory);
                 break;
             case SIMPLE:
             default:
-                reader = new SimpleNodeEdgeReader(osmFile);
+                reader = new SimpleNodeEdgeReader(osmFile, locationListPath, eventListPath, tmcDataDirectory);
                 break;
         }
 

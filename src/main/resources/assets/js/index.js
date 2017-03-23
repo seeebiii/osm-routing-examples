@@ -6,6 +6,7 @@ $(document).ready(function () {
   var points = [];
   var markers = [];
   var polyline = null;
+  var trafficLines = [];
   var showPois = true; // default status for navigation
   var map = L.map('map').setView([48.75969691865349, 9.181823730468752], 10);
   var greenIcon = new L.Icon({
@@ -105,6 +106,14 @@ $(document).ready(function () {
     }
 
     getPois();
+  });
+
+  $('button[name="route_search"]').on('click', function() {
+    removePolyline();
+
+    if (points.length > 1) {
+      sendRequest(points[0], points[1]);
+    }
   });
 
   $('button[name="route_clear"]').on('click', function () {
@@ -331,6 +340,19 @@ $(document).ready(function () {
     }
   }
 
+  function getMetaData() {
+    $.ajax({
+      url: '/api/meta/system',
+      type: 'GET'
+    }).done(function (result) {
+      var footerText = 'Server started with data from file <i>' + result.osmFile + '</i>.';
+      footerText += ' Nodes: ' + result.nodes + ', Edges: ' + result.edges;
+      $('#footer').html(footerText);
+    }).fail(function (error) {
+      console.log('error occurred while retrieving meta data from server.', error);
+    });
+  }
+
   function getPoiOptions() {
     $.ajax({
       url: '/api/pois',
@@ -361,19 +383,95 @@ $(document).ready(function () {
     });
   }
 
-  function getMetaData() {
-    $.ajax({
-      url: '/api/meta/system',
-      type: 'GET'
-    }).done(function (result) {
-      var footerText = 'Server started with data from file <i>' + result.osmFile + '</i>.';
-      footerText += ' Nodes: ' + result.nodes + ', Edges: ' + result.edges;
-      $('#footer').html(footerText);
-    }).fail(function (error) {
-      console.log('error occurred while retrieving meta data from server.', error);
-    });
+
+  function setupTmc() {
+    var select = $('#tmcSelect');
+
+    var beforeTrafficRequest = function () {
+      $('#tmcLoadingBlanket').show();
+      for (var i = 0; i < trafficLines.length; i++) {
+        map.removeLayer(trafficLines[i]);
+      }
+
+      select.attr('disabled', 'disabled');
+    };
+
+    var handleTrafficData = function (result) {
+      for (var i = 0; i+1 < result.points.length; i += 2) {
+        var p1 = result.points[i];
+        var p2 = result.points[i+1];
+        var polyline = L.polyline([p1, p2], {color: 'red', weight: 10}).addTo(map);
+        trafficLines.push(polyline);
+      }
+      select.removeAttr('disabled');
+      $('#tmcLoadingBlanket').hide();
+    };
+
+    var handleTmcError = function (error) {
+      $('#error').html('Something went wrong when retrieving TMC data. Error message: ' + error.responseText).show();
+    };
+
+    var setupTmcHandler = function() {
+      $('#useTmc').on('change', function(e) {
+        if ($(this).is(':checked')) {
+          beforeTrafficRequest();
+          $.ajax({
+            url: '/api/traffic/' + select.val(),
+            type: 'PUT'
+          }).done(handleTrafficData).fail(handleTmcError);
+        } else {
+          select.attr('disabled', 'disabled');
+          beforeTrafficRequest();
+          $.ajax({
+            url: '/api/traffic',
+            type: 'DELETE'
+          }).done(function(result) {
+            $('#tmcLoadingBlanket').hide();
+          }).fail(handleTmcError);
+        }
+      });
+    };
+
+    var buildTmcOptions = function() {
+      var html = '';
+      for (var i = 0; i < 24; i++) {
+        html += '<option>' + i + '</option>';
+      }
+      select.html(html);
+      select.on('change', function(e) {
+        beforeTrafficRequest();
+        $.ajax({
+          url: '/api/traffic/' + select.val(),
+          type: 'PUT'
+        }).done(handleTrafficData).fail(handleTmcError);
+      });
+    };
+
+    var initTmcStatus = function () {
+      $('#tmcLoadingBlanket').show();
+      $.ajax({
+        url: '/api/traffic',
+        type: 'GET'
+      }).done(function(result) {
+        buildTmcOptions();
+        setupTmcHandler();
+        $('#tmcLoadingBlanket').hide();
+
+        if (result.hour < 0) {
+          $('#useTmc').prop('checked', false);
+          select.attr('disabled', 'disabled');
+        } else {
+          $('#useTmc').prop('checked', true);
+          select.val(result.hour);
+          handleTrafficData(result);
+        }
+      }).fail(handleTmcError);
+    };
+
+    initTmcStatus();
   }
 
   getMetaData();
   getPoiOptions();
+  setupTmc();
 });

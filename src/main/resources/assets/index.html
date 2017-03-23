@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <title>MyMap</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
-  <link rel="stylesheet" href="css/index.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"/>
+  <link rel="stylesheet" href="css/index.css"/>
   <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
   <script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
   <script src="https://code.jquery.com/jquery-3.1.1.min.js"
-      integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
-      crossorigin="anonymous"></script>
+          integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+          crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -64,24 +64,25 @@
         <form id="route">
           <div class="form-group">
             <label for="route_from">From</label>
-            <input type="text" id="route_from" disabled />
+            <input type="text" id="route_from" disabled/>
           </div>
           <div class="form-group">
             <label for="route_to">To</label>
-            <input type="text" id="route_to" disabled />
+            <input type="text" id="route_to" disabled/>
           </div>
           <div class="form-group">
             <label for="estimatedDistance">Distance (m)</label>
-            <input type="text" id="estimatedDistance" disabled />
+            <input type="text" id="estimatedDistance" disabled/>
           </div>
           <div class="form-group">
             <label for="estimatedDistanceKm">Distance (km)</label>
-            <input type="text" id="estimatedDistanceKm" disabled />
+            <input type="text" id="estimatedDistanceKm" disabled/>
           </div>
           <div class="form-group">
             <label for="estimatedDuration">Duration</label>
-            <input type="text" id="estimatedDuration" disabled />
+            <input type="text" id="estimatedDuration" disabled/>
           </div>
+          <button type="button" name="route_search">Search</button>
           <button type="button" name="route_clear">Clear</button>
         </form>
       </div>
@@ -102,6 +103,14 @@
             <select id="mode">
               <option>Fastest</option>
               <option>Shortest</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="tmcSelect"><input type="checkbox" id="useTmc" /> TMC hour:
+              <img id="tmcLoadingBlanket" src="img/loading_blanket.gif" style="display: none; width: 20px;" />
+            </label>
+            <select id="tmcSelect">
+              <!-- filled by jquery -->
             </select>
           </div>
         </form>
