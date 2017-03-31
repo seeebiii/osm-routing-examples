@@ -121,6 +121,7 @@
                             <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
                     </archive>
+                    <finalName>osm-routing</finalName>
                 </configuration>
             </plugin>
             <plugin>

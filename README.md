@@ -5,6 +5,28 @@ application for routing and a website to for routing and finding POIs.
 ## Author
 Sebastian Hesse
 
+## Requirements
+
+##### Java & Maven
+You need JDK 8 to compile the sources (or JRE 8 to run them). Download it
+[here](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).
+Additionally [Maven](https://maven.apache.org/) must be installed on your system.
+
+##### OSM files
+You can download OSM files for Germany (and other areas as well) on [this website](http://download.geofabrik.de/).
+
+##### Location Code List and Event Code List
+In order to use the TMC support, you need a LCL and ECL file. This can be
+requested [here for Germany](https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-LCL/location-code-list_node.html).
+
+##### TMC data
+You need some TMC data files. Each file should have the format ```*HH.dat```, e.g. 20170101-19.dat for the time slot
+19:00 - 19:59 on the day 01.01.2017. As you can see, only full hours are supported. The application will also
+save an optimized version of the file with the format ```*HH.dat.cdat``` to the same directory. This improves the
+loading of TMC data, because not all data is relevant. If there occur any errors, it might be possible that the user
+who is executing the application has not enough rights to write into that folder.
+
+
 ## Examples
 ![Browser view of the routing website](/docu/img/browser_view.jpg "Browser View")
 
@@ -12,10 +34,6 @@ Here are some example classes for different use cases.
 
 **Note:**
 I prefer to use the word _node_ instead of _vertex_ in terms of graphs. So don't be irritated.
-
-**Download OSM files:**
-You can download OSM files for Germany (and other areas as well) on [this website](http://download.geofabrik.de/).
-
 
 ### PBF-Reader
 Example to show how to read nodes and ways of an OSM PBF file.
@@ -41,27 +59,17 @@ The *.yml and *.osm.pbf file must be somewhere on the local system.
 Take a look at the [example *.yml file](/src/main/resources/dropwizard.yml).
 ```
 $ mvn clean package
-$ java -jar target/osm-routing-examples-1.2.0.jar server /path/to/config.yml /path/to/osm/file
+$ java -jar target/osm-routing.jar server config.yml osm_data.osn.pbf
 ```
 
-#### TMC Support
-Optionally you can start the server by providing some TMC data. For this you need the a Location Code List
-(e.g. for Germany, you can request one here:
-https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-LCL/location-code-list_node.html) and an event list
-(most likely delivered together with the Location Code List). You also need some TMC data files. Then you can
- start the server with the following arguments:
- 
-```
-$ java -jar target/osm-routing-examples-1.2.0.jar server config.yml osm_data.osm.pbf lcl.csv event_list.csv /path/to/tmc/directory
-``` 
+If you're using a huge OSM file, you should increase the heap size for the JVM, e.g. ```-Xmx10g``` for 10 GB.
 
 A web frontend will be served from:
 ```
 http://localhost:8080/index.html
 ```
 
-
-##### REST API
+#### REST API
 ```
 ### Get a path between two points (lat1,lon1) and (lat2,lon2) ###
 vehicle: car, pedestrian
@@ -95,6 +103,17 @@ DELETE /api/traffic
 
 ### Get meta information about the OSM backend ###
 GET /api/meta
+```
+
+#### TMC Support
+Optionally you can start the server by providing some TMC data. For this you need the a Location Code List
+(e.g. for Germany, you can request one here:
+https://www.bast.de/DE/Verkehrstechnik/Fachthemen/v2-LCL/location-code-list_node.html) and an event list
+(most likely delivered together with the Location Code List). You also need some TMC data files. Then you can
+ start the server with the following arguments:
+ 
+```
+$ java -jar target/osm-routing.jar server config.yml osm_data.osm.pbf lcl.csv event_list.csv /path/to/tmc/directory
 ```
 
 ## Development

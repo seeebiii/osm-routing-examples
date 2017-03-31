@@ -88,9 +88,9 @@ public class EventListImporter {
             return 0.85;
         } else if (StringUtils.contains(text, "queuing traffic")) {
             return 0.8;
-        } else if (StringUtils.contains(text, "slow traffic")) {
-            return 0.5;
         } else if (StringUtils.contains(text, "heavy traffic")) {
+            return 0.5;
+        } else if (StringUtils.contains(text, "slow traffic")) {
             return 0.3;
         } else if (StringUtils.containsAny(text, "construction work", "construction traffic merging", "roadwork",
                 "resurfacing work")) {
